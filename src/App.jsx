@@ -1,11 +1,17 @@
-import "./App.css";
-import { Button, HStack } from "@chakra-ui/react";
+import { Button, HStack, Container } from "@chakra-ui/react";
+
 function App() {
   return (
-    <HStack>
-      <Button>Click me</Button>
-      <Button>Click me</Button>
-    </HStack>
+    <Container padding="10">
+      <HStack gap="4">
+        <Button colorPalette="blue" variant="solid">
+          Buton Albastru
+        </Button>
+        <Button colorPalette="red" variant="outline">
+          Buton Roșu
+        </Button>
+      </HStack>
+    </Container>
   );
 }
 
