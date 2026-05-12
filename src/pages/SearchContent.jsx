@@ -5,6 +5,7 @@ import { GiTennisRacket, GiEightBall, GiTennisCourt } from "react-icons/gi";
 import { MdSportsTennis } from "react-icons/md";
 import { colors } from "./colors";
 import SportCard from "../components/SportCard";
+import { useNavigate } from "react-router-dom";
 
 const SPORTS_DATA = [
   { id: "fotbal", label: "Fotbal", icon: FaFutbol, bg: "#6B8E5C" },
@@ -16,12 +17,12 @@ const SPORTS_DATA = [
   { id: "biliard", label: "Biliard", icon: GiEightBall, bg: "#7EA3A3" },
 ];
 
-const SearchContent = ({ onSportSelect }) => {
+const SearchContent = () => {
+  const navigate = useNavigate();
+
   const handleCardClick = (sportLabel) => {
-    // Comunicăm către UserPage ce sport a fost ales, nu navigăm afară din pagină
-    if (onSportSelect) {
-      onSportSelect(sportLabel.toLowerCase());
-    }
+    // Navigam catre /user/search/filter/fotbal
+    navigate(`filter/${sportLabel.toLowerCase()}`);
   };
 
   return (
