@@ -7,6 +7,10 @@ const ResponsiveCarousel = ({ children }) => (
     overflowX="auto"
     gap={6}
     pb={4}
+    // FIX PENTRU ANIMAȚIE: Adăugăm padding sus ca să aibă loc butonul să se ridice, 
+    // și margin top negativ ca să nu strice spațierea din Homepage
+    pt="12px" 
+    mt="-12px"
     css={{
       "&::-webkit-scrollbar": { height: "6px", display: "none" },
       "@media (min-width: 768px)": {

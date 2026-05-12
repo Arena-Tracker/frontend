@@ -5,6 +5,7 @@ import { Box } from "@chakra-ui/react";
 import { colors } from "./colors";
 import { Navigation } from "../components/Navigation";
 import HomeContent from "./HomeContent";
+import SearchContent from "./SearchContent"; // <-- Importul nou
 
 const UserPage = () => {
   const [activeTab, setActiveTab] = useState("home");
@@ -14,11 +15,7 @@ const UserPage = () => {
       case "home":
         return <HomeContent />;
       case "search":
-        return (
-          <Box color="white" p={10}>
-            Pagina Căutare (În lucru...)
-          </Box>
-        );
+        return <SearchContent />; // <-- Apelul componentei noi
       case "bookings":
         return (
           <Box color="white" p={10}>
