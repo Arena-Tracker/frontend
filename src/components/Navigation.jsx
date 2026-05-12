@@ -1,9 +1,8 @@
-import React from "react";
 import { Box, Flex, VStack, Icon, Text } from "@chakra-ui/react";
 import { FiSearch, FiHome, FiCalendar, FiUser } from "react-icons/fi";
 import { colors } from "../pages/colors";
 
-export const NAV_ITEMS = [
+const NAV_ITEMS = [
   { id: "home", label: "Acasă", icon: FiHome },
   { id: "search", label: "Caută", icon: FiSearch },
   { id: "bookings", label: "Rezervări", icon: FiCalendar },

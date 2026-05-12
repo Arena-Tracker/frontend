@@ -52,7 +52,7 @@ const LoginPage = ({ onLogin }) => {
               onChange={(e) => setPassword(e.target.value)}
             />
             {error && <Text color="red.500">{error}</Text>}
-            <Button colorPalette="purple" type="submit" width="full">
+            <Button colorScheme="purple" type="submit" width="full">
               Login
             </Button>
           </VStack>

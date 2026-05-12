@@ -1,4 +1,3 @@
-import React from "react";
 import { Box, Flex, Icon, Input } from "@chakra-ui/react";
 import { FiSearch } from "react-icons/fi";
 import { FaFutbol, FaBasketballBall } from "react-icons/fa";

@@ -1,4 +1,3 @@
-import React from "react";
 import { Flex, Icon, Text, VStack } from "@chakra-ui/react";
 import { colors } from "../pages/colors";
 

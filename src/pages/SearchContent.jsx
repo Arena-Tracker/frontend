@@ -1,12 +1,8 @@
-import React from "react";
-// Importăm Grid în loc de SimpleGrid/Flex
 import { Box, Flex, Icon, Input, Text, Grid } from "@chakra-ui/react";
 import { FiSearch } from "react-icons/fi";
 import { FaFutbol, FaBasketballBall, FaTableTennis } from "react-icons/fa";
 import { GiTennisRacket, GiEightBall, GiTennisCourt } from "react-icons/gi";
 import { MdSportsTennis } from "react-icons/md";
-// import { useNavigate } from "react-router-dom"; // <-- Decomentează dacă folosești react-router pentru navigare
-
 import { colors } from "./colors";
 import SportCard from "../components/SportCard";
 
@@ -20,84 +16,60 @@ const SPORTS_DATA = [
   { id: "biliard", label: "Biliard", icon: GiEightBall, bg: "#7EA3A3" },
 ];
 
-const SearchContent = () => {
-  // const navigate = useNavigate();
-
-  // Funcția care se va apela la click
-  const handleSportClick = (sportId) => {
-    console.log("Navigare către sportul:", sportId);
-    // Aici apelezi noul endpoint. Exemplu:
-    // navigate(`/rezervari/${sportId}`); 
+const SearchContent = ({ onSportSelect }) => {
+  const handleCardClick = (sportLabel) => {
+    // Comunicăm către UserPage ce sport a fost ales, nu navigăm afară din pagină
+    if (onSportSelect) {
+      onSportSelect(sportLabel.toLowerCase());
+    }
   };
 
   return (
-    <Box maxW="1400px" mx="auto" pt={{ base: 0, md: 6 }}>
-      
-      {/* Bara de search */}
-      <Flex 
-        align="center" 
-        bg={colors.bgCard} 
-        borderRadius="2xl" 
-        px={6} 
-        h={{ base: "56px", md: "64px", lg: "72px" }}
-        mb={{ base: 10, md: 16 }} 
-        maxW="800px" 
-        mx="auto" 
-        border="1px solid transparent"
-        transition="all 0.2s"
-        boxShadow="md"
-        _focusWithin={{ 
-          borderColor: colors.accent, 
-          boxShadow: `0 0 0 1px ${colors.accent}` 
-        }}
-      >
-        <Icon as={FiSearch} color="gray.400" boxSize={{ base: 5, md: 6 }} mr={4} />
-        <Input 
-          placeholder="Caută după nume sau locație..." 
-          border="none" 
-          bg="transparent"
-          color={colors.textMain}
-          fontSize={{ base: "md", md: "lg" }}
-          _focus={{ outline: "none", boxShadow: "none", border: "none" }} 
-          _focusVisible={{ outline: "none", boxShadow: "none", border: "none" }}
-        />
-      </Flex>
-
-      <Box maxW="1200px" mx="auto">
-        <Text
-          fontSize={{ base: "xl", md: "3xl" }}
-          fontWeight="700"
-          color={colors.textMain}
-          mb={{ base: 6, md: 12 }}
-          textAlign={{ base: "left", md: "center" }}
+    <Box maxW="1200px" mx="auto" pt={4}>
+      <Box mb={12}>
+        <Flex 
+          align="center" 
+          bg={colors.bgCard} 
+          borderRadius="2xl" 
+          px={6} 
+          h="64px" 
+          maxW="700px" 
+          mx="auto" 
+          boxShadow="md" 
+          _focusWithin={{ boxShadow: `0 0 0 1px ${colors.accent}` }}
         >
-          Alege sportul tău preferat
-        </Text>
-
-        {/* Noul layout: Grid automat care aliniază ultimul element la stânga */}
-        <Grid 
-          templateColumns={{ 
-            base: "repeat(2, 1fr)",        // Mobile: 2 coloane egale pe tot ecranul
-            md: "repeat(3, max-content)",  // Tablete: 3 coloane cât lățimea cardului
-            lg: "repeat(4, max-content)"   // Desktop: 4 coloane cât lățimea cardului
-          }} 
-          gap={{ base: 4, sm: 6, md: 8, lg: 10 }}
-          justifyContent="center" // Această regulă centrează întregul grup de coloane
-        >
-          {SPORTS_DATA.map((sport) => (
-            <SportCard
-              key={sport.id}
-              icon={sport.icon}
-              label={sport.label}
-              cardBg={sport.bg}
-              color="white"
-              size="lg"
-              onClick={() => handleSportClick(sport.id)} // Transmitem funcția mai departe
-            />
-          ))}
-        </Grid>
+          <Icon as={FiSearch} color="gray.400" boxSize={6} mr={4} />
+          <Input 
+            placeholder="Caută terenuri, sporturi, locații..." 
+            border="none" 
+            bg="transparent" 
+            color={colors.textMain} 
+            fontSize="lg" 
+            _focus={{ boxShadow: "none" }} 
+          />
+        </Flex>
       </Box>
 
+      <Text fontSize={{ base: "xl", md: "3xl" }} fontWeight="700" color="white" mb={10} textAlign="center">
+        Alege sportul tău preferat
+      </Text>
+
+      <Grid 
+        templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(3, max-content)", lg: "repeat(4, max-content)" }} 
+        gap={8} 
+        justifyContent="center"
+      >
+        {SPORTS_DATA.map((sport) => (
+          <SportCard
+            key={sport.id}
+            icon={sport.icon}
+            label={sport.label}
+            cardBg={sport.bg}
+            size="lg"
+            onClick={() => handleCardClick(sport.label)}
+          />
+        ))}
+      </Grid>
     </Box>
   );
 };

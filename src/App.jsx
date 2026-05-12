@@ -9,6 +9,7 @@ import LoginPage from "./pages/LoginPage";
 import UserPage from "./pages/UserPage";
 import AdminPage from "./pages/AdminPage";
 import BazaPage from "./pages/BazaPage";
+import FilterContent from "./pages/FilterContent";
 
 function App() {
   // Aici ținem minte cine e logat (null = nimeni)
@@ -31,6 +32,8 @@ function App() {
             )
           }
         />
+        <Route path="/filter/:sportType" element={<FilterContent />} />
+        {/* ... restul rutelor */}
         <Route
           path="/admin"
           element={

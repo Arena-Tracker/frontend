@@ -4,6 +4,7 @@ import { defineConfig, loadEnv } from "vite";
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   // Încărcăm variabilele de mediu din fișierul .env (VITE_...)
+  // eslint-disable-next-line no-undef
   const env = loadEnv(mode, process.cwd());
 
   return {

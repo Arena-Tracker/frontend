@@ -4,27 +4,25 @@ import { AiFillStar } from "react-icons/ai";
 import { IoTicketOutline } from "react-icons/io5";
 import { colors } from "../pages/colors";
 
-const VenueCard = ({ data }) => (
+const FilterVenueCard = ({ data }) => (
   <Box
-    w={{ base: "280px", md: "320px", lg: "350px" }}
-    minW={{ base: "280px", md: "320px", lg: "350px" }}
+    w="100%" // Se adaptează coloanei de grid
     bg={colors.bgCard}
     borderRadius="2xl"
     overflow="hidden"
-    flexShrink={0}
     cursor="pointer"
     transition="all 0.2s"
-    _hover={{ transform: "translateY(-6px)", boxShadow: "0 10px 20px rgba(0,0,0,0.3)" }}
+    _hover={{ transform: "translateY(-6px)", boxShadow: "0 10px 20px rgba(0,0,0,0.4)" }}
   >
-    <Image src={data.image} alt={data.title} h="180px" w="100%" objectFit="cover" />
+    <Image src={data.image} alt={data.title} h="200px" w="100%" objectFit="cover" />
     <Box p={5}>
-      <Text color={colors.textMain} fontWeight="600" fontSize="lg" mb={4}>{data.title}</Text>
+      <Text color={colors.textMain} fontWeight="600" fontSize="lg" noOfLines={1} mb={4}>{data.title}</Text>
       <Flex justifyContent="space-between" alignItems="flex-end">
         <VStack align="start" spacing={2} fontSize="sm">
           <HStack color="gray.400"><Icon as={MdLocationOn} /><Text>{data.location}</Text></HStack>
-          <HStack color={colors.accent} fontWeight="500"><Icon as={IoTicketOutline} /><Text>{data.price}</Text></HStack>
+          <HStack color={colors.accent} fontWeight="600"><Icon as={IoTicketOutline} /><Text>{data.price}</Text></HStack>
         </VStack>
-        <HStack color={colors.textMain} fontWeight="600" bg="#16181C" px={2} py={1} borderRadius="md">
+        <HStack color={colors.textMain} fontWeight="700" bg="#16181C" px={3} py={1} borderRadius="lg">
           <Text>{data.rating}</Text><Icon as={AiFillStar} color="#FBBF24" />
         </HStack>
       </Flex>
@@ -32,4 +30,4 @@ const VenueCard = ({ data }) => (
   </Box>
 );
 
-export default VenueCard;
+export default FilterVenueCard;
