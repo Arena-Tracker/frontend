@@ -41,7 +41,10 @@ export const Navigation = ({
                   : "transparent"
               }
               color={activeTab === item.id ? colors.accent : "gray.400"}
-              onClick={() => onTabChange(item.id)}
+              onClick={() => {
+                onTabChange(item.id);
+                console.log(`Sunt pe butonul cu id:${item.id}`);
+              }}
               _hover={{ bg: "rgba(94, 209, 190, 0.05)", color: colors.accent }}
               transition="all 0.2s"
             >
