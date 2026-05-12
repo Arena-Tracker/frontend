@@ -1,17 +1,58 @@
-import { Button, HStack, Container } from "@chakra-ui/react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { useState } from "react";
+import LoginPage from "./pages/LoginPage";
+import UserPage from "./pages/UserPage";
+import AdminPage from "./pages/AdminPage";
+import BazaPage from "./pages/BazaPage";
 
 function App() {
+  // Aici ținem minte cine e logat (null = nimeni)
+  const [user, setUser] = useState(null);
+
   return (
-    <Container padding="10">
-      <HStack gap="4">
-        <Button colorPalette="blue" variant="solid">
-          Buton Albastru
-        </Button>
-        <Button colorPalette="red" variant="outline">
-          Buton Roșu
-        </Button>
-      </HStack>
-    </Container>
+    <Router>
+      <Routes>
+        {/* Pagina de Login - trimitem funcția setUser ca să poată loga utilizatorul */}
+        <Route path="/" element={<LoginPage onLogin={setUser} />} />
+
+        {/* Rutele protejate: dacă nu ești logat cu rolul corect, te trimite la / */}
+        <Route
+          path="/user"
+          element={
+            user?.role === "user" ? (
+              <UserPage user={user} />
+            ) : (
+              <Navigate to="/" />
+            )
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            user?.role === "admin" ? (
+              <AdminPage user={user} />
+            ) : (
+              <Navigate to="/" />
+            )
+          }
+        />
+        <Route
+          path="/bazasportiva"
+          element={
+            user?.role === "baza" ? (
+              <BazaPage user={user} />
+            ) : (
+              <Navigate to="/" />
+            )
+          }
+        />
+      </Routes>
+    </Router>
   );
 }
 
