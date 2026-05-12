@@ -1,15 +1,59 @@
-import { Heading, Container, Button } from "@chakra-ui/react";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { Box } from "@chakra-ui/react";
 
-const UserPage = ({ user }) => {
-  const navigate = useNavigate();
+// Importuri adaptate
+import { colors } from "./colors";
+import { Navigation } from "../components/Navigation";
+import HomeContent from "./HomeContent";
+
+const UserPage = () => {
+  const [activeTab, setActiveTab] = useState("home");
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case "home":
+        return <HomeContent />;
+      case "search":
+        return (
+          <Box color="white" p={10}>
+            Pagina Căutare (În lucru...)
+          </Box>
+        );
+      case "bookings":
+        return (
+          <Box color="white" p={10}>
+            Pagina Rezervări (În lucru...)
+          </Box>
+        );
+      case "profile":
+        return (
+          <Box color="white" p={10}>
+            Pagina Profil (În lucru...)
+          </Box>
+        );
+      default:
+        return <HomeContent />;
+    }
+  };
+
   return (
-    <Container py={10}>
-      <Heading>Salut, {user.name}! (Rol: Utilizator)</Heading>
-      <Button mt={4} onClick={() => navigate("/")}>
-        Logout
-      </Button>
-    </Container>
+    <Box
+      bg={colors.bgMain}
+      minH="100vh"
+      fontFamily="'Plus Jakarta Sans', sans-serif"
+    >
+      <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+
+      <Box
+        ml={{ base: 0, md: "260px" }}
+        pb={{ base: "80px", md: 10 }}
+        pt={{ base: 6, md: 10 }}
+        px={{ base: 4, md: 10, lg: 16 }}
+      >
+        {renderContent()}
+      </Box>
+    </Box>
   );
 };
+
 export default UserPage;
