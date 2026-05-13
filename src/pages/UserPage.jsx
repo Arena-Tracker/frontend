@@ -2,11 +2,29 @@ import { Box } from "@chakra-ui/react";
 import { Outlet } from "react-router-dom";
 import { colors } from "./colors";
 import { Navigation } from "../components/Navigation";
+import HomeContent from "./HomeContent";
+import { FiCalendar, FiHome, FiSearch, FiUser } from "react-icons/fi";
+
+const NAV_ITEMS_USER = [
+  { id: "home", label: "Acasă", icon: FiHome },
+  { id: "search", label: "Caută", icon: FiSearch },
+  { id: "bookings", label: "Rezervări", icon: FiCalendar },
+  { id: "profile", label: "Profil", icon: FiUser },
+];
 
 const UserPage = () => {
   return (
-    <Box bg={colors.bgMain} minH="100vh">
-      <Navigation />
+    <Box
+      bg={colors.bgMain}
+      minH="100vh"
+      fontFamily="'Plus Jakarta Sans', sans-serif"
+    >
+      <Navigation
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        navItems={NAV_ITEMS_USER}
+        title="SportApp."
+      />
 
       <Box
         ml={{ base: 0, md: "260px" }}

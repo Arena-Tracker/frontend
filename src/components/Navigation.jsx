@@ -1,3 +1,4 @@
+// src/components/Navigation.jsx
 import React from "react";
 import { Box, Flex, VStack, Icon, Text } from "@chakra-ui/react";
 import { FiSearch, FiHome, FiCalendar, FiUser } from "react-icons/fi";
@@ -18,8 +19,17 @@ export const Navigation = () => {
   // Detectam tab-ul activ din path-ul URL-ului (ex: /user/search -> search)
   const activeTab = location.pathname.split("/")[2] || "home";
 
+import { colors } from "../pages/colors";
+
+export const Navigation = ({
+  activeTab,
+  onTabChange,
+  navItems,
+  title = "SportApp.",
+}) => {
   return (
     <>
+      {/* Sidebar - Desktop */}
       <Box
         display={{ base: "none", md: "block" }}
         w="260px" h="100vh" bg={colors.bgCard} position="fixed"
@@ -27,12 +37,13 @@ export const Navigation = () => {
       >
         <Text color={colors.accent} fontSize="2xl" fontWeight="900" mb={12}>SportApp.</Text>
         <VStack spacing={4} align="stretch">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <Flex
               key={item.id} align="center" p={4} borderRadius="xl" cursor="pointer"
               color={activeTab === item.id ? colors.accent : "gray.400"}
               onClick={() => navigate(`/user/${item.id}`)}
               _hover={{ bg: "rgba(94, 209, 190, 0.05)", color: colors.accent }}
+              transition="all 0.2s"
             >
               <Icon as={item.icon} boxSize={5} mr={4} />
               <Text fontSize="md" fontWeight="600">{item.label}</Text>
@@ -41,13 +52,14 @@ export const Navigation = () => {
         </VStack>
       </Box>
 
+      {/* Mobile Nav - Bottom */}
       <Box
         display={{ base: "block", md: "none" }}
         position="fixed" bottom={0} left={0} w="100%"
         bg={colors.bgMain} borderTop={`1px solid ${colors.bgCard}`} zIndex={10}
       >
         <Flex justifyContent="space-around" alignItems="center">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <VStack
               key={item.id} w="100%" py={3} spacing={1} cursor="pointer"
               color={activeTab === item.id ? colors.accent : "gray.500"}
