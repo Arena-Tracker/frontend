@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Flex,
@@ -12,6 +12,22 @@ import {
 import { FiX, FiPlus, FiTrash2, FiSave } from "react-icons/fi";
 import { colors } from "../pages/colors";
 
+const invertedInputStyles = {
+  bg: "rgba(0, 0, 0, 0.25)",
+  border: "1px solid rgba(255, 255, 255, 0.06)",
+  color: colors.textMain,
+  h: "48px",
+  borderRadius: "xl",
+  _focus: {
+    borderColor: colors.accent,
+    bg: "rgba(0, 0, 0, 0.4)",
+    outline: "none",
+    boxShadow: `0 0 0 1px ${colors.accent}`,
+  },
+  _focusVisible: { outline: "none" },
+  _placeholder: { color: "gray.600" },
+};
+
 const EditTerenModal = ({ isOpen, onClose, onSave, terenData }) => {
   const [formData, setFormData] = useState({
     id: null,
@@ -21,8 +37,11 @@ const EditTerenModal = ({ isOpen, onClose, onSave, terenData }) => {
     servicii: [],
     sport: "Fotbal",
   });
+  const [prevIsOpen, setPrevIsOpen] = useState(false);
 
-  useEffect(() => {
+  // FIX PENTRU A EVITA useEffect (Cascading Renders)
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
     if (isOpen && terenData) {
       setFormData({
         id: terenData.id,
@@ -36,7 +55,7 @@ const EditTerenModal = ({ isOpen, onClose, onSave, terenData }) => {
         })),
       });
     }
-  }, [isOpen, terenData]);
+  }
 
   if (!isOpen || !terenData) return null;
 
@@ -64,25 +83,6 @@ const EditTerenModal = ({ isOpen, onClose, onSave, terenData }) => {
   const handleNumberInput = (field, value) => {
     const cleanValue = value.replace(/[^0-9.]/g, "");
     setFormData({ ...formData, [field]: cleanValue });
-  };
-
-  const handleSubmit = () => onSave(formData);
-
-  // STILURI PENTRU INPUTURI (Efect de adâncime pentru vizibilitate maximă)
-  const invertedInputStyles = {
-    bg: "rgba(0, 0, 0, 0.25)", // Mai închis pentru a părea "săpat" în ecran
-    border: "1px solid rgba(255, 255, 255, 0.06)",
-    color: colors.textMain,
-    h: "48px",
-    borderRadius: "xl",
-    _focus: {
-      borderColor: colors.accent,
-      bg: "rgba(0, 0, 0, 0.4)",
-      outline: "none",
-      boxShadow: `0 0 0 1px ${colors.accent}`,
-    },
-    _focusVisible: { outline: "none" },
-    _placeholder: { color: "gray.600" },
   };
 
   return (
@@ -121,7 +121,6 @@ const EditTerenModal = ({ isOpen, onClose, onSave, terenData }) => {
         zIndex={1001}
         animation="fadeIn 0.2s"
       >
-        {/* Header Gradient Top-Bottom */}
         <Flex
           justify="space-between"
           align="center"
@@ -273,7 +272,6 @@ const EditTerenModal = ({ isOpen, onClose, onSave, terenData }) => {
               ) : (
                 <VStack spacing={3} align="stretch">
                   {formData.servicii.map((serviciu) => (
-                    // BUG FIX: Am modificat fundalul randului si am facut inputurile sa aiba margini clare
                     <Flex
                       key={serviciu.uid}
                       gap={3}
@@ -377,7 +375,7 @@ const EditTerenModal = ({ isOpen, onClose, onSave, terenData }) => {
             color={colors.accent}
             leftIcon={<FiSave />}
             _hover={{ bg: colors.accent, color: "#16181C" }}
-            onClick={handleSubmit}
+            onClick={() => onSave(formData)}
           >
             Salvează Modificările
           </Button>

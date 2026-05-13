@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Box, Flex, Text, Button, Input, VStack, Icon } from "@chakra-ui/react";
 import { FiX, FiPlus, FiTrash2, FiChevronDown, FiCheck } from "react-icons/fi";
 import { colors } from "../pages/colors";
@@ -20,7 +20,24 @@ const DEFAULT_FORM_STATE = {
   servicii: [],
 };
 
-// --- COMPONENTE CUSTOM DE UI ---
+// --- STILURI GLOBALE PENTRU INPUTURI ---
+const inputStyles = {
+  bg: "rgba(0, 0, 0, 0.25)",
+  border: "1px solid rgba(255, 255, 255, 0.06)",
+  color: colors.textMain,
+  h: "48px",
+  borderRadius: "xl",
+  _focus: {
+    borderColor: colors.accent,
+    bg: "rgba(0, 0, 0, 0.4)",
+    outline: "none",
+    boxShadow: `0 0 0 1px ${colors.accent}`,
+  },
+  _focusVisible: { outline: "none" },
+  _placeholder: { color: "gray.600" },
+};
+
+// --- COMPONENTE CUSTOM MUTATE ÎN AFARA RENDER-ULUI ---
 const CustomFormField = ({ label, isRequired, children, flex }) => (
   <Box w="100%" flex={flex}>
     <Text
@@ -42,20 +59,94 @@ const CustomFormField = ({ label, isRequired, children, flex }) => (
   </Box>
 );
 
-// --- COMPONENTA PRINCIPALĂ MODAL ---
+const CustomSelect = ({ value, onChange }) => {
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
+  const selectedOption = SPORT_OPTIONS.find((o) => o.id === value);
+
+  return (
+    <Box position="relative" w="100%">
+      <Flex
+        {...inputStyles}
+        px={4}
+        align="center"
+        justify="space-between"
+        cursor="pointer"
+        border={
+          isSelectOpen ? `1px solid ${colors.accent}` : inputStyles.border
+        }
+        boxShadow={isSelectOpen ? `0 0 0 1px ${colors.accent}` : "none"}
+        onClick={() => setIsSelectOpen(!isSelectOpen)}
+        transition="all 0.2s"
+      >
+        <Text
+          color={selectedOption ? colors.textMain : "gray.600"}
+          fontSize="md"
+          fontWeight="500"
+        >
+          {selectedOption ? selectedOption.nume : "Selectează sportul"}
+        </Text>
+        <Icon
+          as={FiChevronDown}
+          color="gray.400"
+          transform={isSelectOpen ? "rotate(180deg)" : "none"}
+          transition="transform 0.3s"
+        />
+      </Flex>
+
+      {isSelectOpen && (
+        <Box
+          position="absolute"
+          top="calc(100% + 8px)"
+          left={0}
+          w="100%"
+          bg={colors.bgMain}
+          borderRadius="xl"
+          border={`1px solid rgba(255,255,255,0.05)`}
+          boxShadow="2xl"
+          zIndex={10}
+          p={2}
+          animation="fadeIn 0.2s"
+        >
+          {SPORT_OPTIONS.map((opt) => (
+            <Flex
+              key={opt.id}
+              p={3}
+              align="center"
+              cursor="pointer"
+              borderRadius="lg"
+              color={value === opt.id ? colors.accent : colors.textMain}
+              bg={value === opt.id ? "rgba(94, 209, 190, 0.1)" : "transparent"}
+              _hover={{ bg: "rgba(255,255,255,0.05)" }}
+              onClick={() => {
+                onChange(opt.id);
+                setIsSelectOpen(false);
+              }}
+            >
+              <Text fontWeight="600">{opt.nume}</Text>
+            </Flex>
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+};
+
+// --- COMPONENTA PRINCIPALĂ ---
 const AddTerenModal = ({ isOpen, onClose, onSave, initialData }) => {
   const [formData, setFormData] = useState(DEFAULT_FORM_STATE);
+  const [prevIsOpen, setPrevIsOpen] = useState(false);
 
-  useEffect(() => {
+  // FIX PENTRU A EVITA useEffect (Cascading Renders)
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
     if (isOpen) {
       setFormData(initialData || DEFAULT_FORM_STATE);
     }
-  }, [isOpen, initialData]);
+  }
 
   if (!isOpen) return null;
 
-  // --- LOGICĂ SERVICII ---
-  const addService = () => {
+  const addService = () =>
     setFormData({
       ...formData,
       servicii: [
@@ -63,122 +154,25 @@ const AddTerenModal = ({ isOpen, onClose, onSave, initialData }) => {
         { uid: Date.now() + Math.random(), nume: "", pret: "" },
       ],
     });
-  };
-
-  const updateService = (uid, field, val) => {
-    const newServicii = formData.servicii.map((srv) =>
-      srv.uid === uid ? { ...srv, [field]: val } : srv,
-    );
-    setFormData({ ...formData, servicii: newServicii });
-  };
-
-  const removeService = (uid) => {
+  const updateService = (uid, field, val) =>
+    setFormData({
+      ...formData,
+      servicii: formData.servicii.map((srv) =>
+        srv.uid === uid ? { ...srv, [field]: val } : srv,
+      ),
+    });
+  const removeService = (uid) =>
     setFormData({
       ...formData,
       servicii: formData.servicii.filter((srv) => srv.uid !== uid),
     });
-  };
 
   const handleNumberInput = (field, value) => {
     const cleanValue = value.replace(/[^0-9.]/g, "");
     setFormData({ ...formData, [field]: cleanValue });
   };
 
-  const handleSubmit = () => {
-    onSave(formData, false); // false = isEditing = false
-  };
-
-  // --- STILURI INPUTURI (Contrast & Depth) ---
-  const inputStyles = {
-    bg: "rgba(0, 0, 0, 0.25)", // Fundal întunecat pentru efectul de adâncime
-    border: "1px solid rgba(255, 255, 255, 0.06)",
-    color: colors.textMain,
-    h: "48px",
-    borderRadius: "xl",
-    _focus: {
-      borderColor: colors.accent,
-      bg: "rgba(0, 0, 0, 0.4)",
-      outline: "none",
-      boxShadow: `0 0 0 1px ${colors.accent}`,
-    },
-    _focusVisible: { outline: "none" },
-    _placeholder: { color: "gray.600" },
-  };
-
-  // Dropdown Custom (Integrat cu noile stiluri)
-  const CustomSelect = ({ value, onChange }) => {
-    const [isSelectOpen, setIsSelectOpen] = useState(false);
-    const selectedOption = SPORT_OPTIONS.find((o) => o.id === value);
-
-    return (
-      <Box position="relative" w="100%">
-        <Flex
-          {...inputStyles}
-          px={4}
-          align="center"
-          justify="space-between"
-          cursor="pointer"
-          border={
-            isSelectOpen ? `1px solid ${colors.accent}` : inputStyles.border
-          }
-          boxShadow={isSelectOpen ? `0 0 0 1px ${colors.accent}` : "none"}
-          onClick={() => setIsSelectOpen(!isSelectOpen)}
-          transition="all 0.2s"
-        >
-          <Text
-            color={selectedOption ? colors.textMain : "gray.600"}
-            fontSize="md"
-            fontWeight="500"
-          >
-            {selectedOption ? selectedOption.nume : "Selectează sportul"}
-          </Text>
-          <Icon
-            as={FiChevronDown}
-            color="gray.400"
-            transform={isSelectOpen ? "rotate(180deg)" : "none"}
-            transition="transform 0.3s"
-          />
-        </Flex>
-
-        {isSelectOpen && (
-          <Box
-            position="absolute"
-            top="calc(100% + 8px)"
-            left={0}
-            w="100%"
-            bg={colors.bgMain}
-            borderRadius="xl"
-            border={`1px solid rgba(255,255,255,0.05)`}
-            boxShadow="2xl"
-            zIndex={10}
-            p={2}
-            animation="fadeIn 0.2s"
-          >
-            {SPORT_OPTIONS.map((opt) => (
-              <Flex
-                key={opt.id}
-                p={3}
-                align="center"
-                cursor="pointer"
-                borderRadius="lg"
-                color={value === opt.id ? colors.accent : colors.textMain}
-                bg={
-                  value === opt.id ? "rgba(94, 209, 190, 0.1)" : "transparent"
-                }
-                _hover={{ bg: "rgba(255,255,255,0.05)" }}
-                onClick={() => {
-                  onChange(opt.id);
-                  setIsSelectOpen(false);
-                }}
-              >
-                <Text fontWeight="600">{opt.nume}</Text>
-              </Flex>
-            ))}
-          </Box>
-        )}
-      </Box>
-    );
-  };
+  const handleSubmit = () => onSave(formData, false);
 
   return (
     <Box
@@ -204,7 +198,6 @@ const AddTerenModal = ({ isOpen, onClose, onSave, initialData }) => {
         cursor="pointer"
       />
 
-      {/* Modal Card */}
       <Box
         position="relative"
         bg={colors.bgCard}
@@ -216,7 +209,6 @@ const AddTerenModal = ({ isOpen, onClose, onSave, initialData }) => {
         zIndex={1001}
         animation="fadeIn 0.2s"
       >
-        {/* Header cu Gradient Lateral (Specific pentru Adăugare) */}
         <Flex
           justify="space-between"
           align="center"
@@ -254,7 +246,6 @@ const AddTerenModal = ({ isOpen, onClose, onSave, initialData }) => {
           </Flex>
         </Flex>
 
-        {/* Body */}
         <Box
           p={6}
           maxH="65vh"
@@ -268,7 +259,6 @@ const AddTerenModal = ({ isOpen, onClose, onSave, initialData }) => {
           }}
         >
           <VStack spacing={6} align="stretch">
-            {/* Secțiune Detalii */}
             <Box>
               <Text
                 color={colors.textMain}
@@ -278,7 +268,6 @@ const AddTerenModal = ({ isOpen, onClose, onSave, initialData }) => {
               >
                 Detalii Principale
               </Text>
-
               <CustomFormField label="Nume Teren" isRequired>
                 <Input
                   placeholder="Ex: Teren Fotbal VIP"
@@ -289,7 +278,6 @@ const AddTerenModal = ({ isOpen, onClose, onSave, initialData }) => {
                   }
                 />
               </CustomFormField>
-
               <Flex gap={4} mt={4}>
                 <CustomFormField label="Tip Sport" isRequired flex={1}>
                   <CustomSelect
@@ -299,7 +287,6 @@ const AddTerenModal = ({ isOpen, onClose, onSave, initialData }) => {
                     }
                   />
                 </CustomFormField>
-
                 <CustomFormField
                   label="Capacitate (Locuri)"
                   isRequired
@@ -317,7 +304,6 @@ const AddTerenModal = ({ isOpen, onClose, onSave, initialData }) => {
                   />
                 </CustomFormField>
               </Flex>
-
               <Box mt={4}>
                 <CustomFormField label="Preț pe oră (RON)" isRequired>
                   <Input
@@ -336,7 +322,6 @@ const AddTerenModal = ({ isOpen, onClose, onSave, initialData }) => {
 
             <Box w="100%" h="1px" bg="whiteAlpha.50" my={2} />
 
-            {/* Secțiune Servicii (BUG REPARAT) */}
             <Box>
               <Flex justify="space-between" align="center" mb={4}>
                 <Text color={colors.textMain} fontSize="md" fontWeight="700">
@@ -370,7 +355,6 @@ const AddTerenModal = ({ isOpen, onClose, onSave, initialData }) => {
               ) : (
                 <VStack spacing={3} align="stretch">
                   {formData.servicii.map((serviciu) => (
-                    // FIX-UL AICI: Fundalul rândului e usor transparent, iar inputurile folosesc invertedStyles
                     <Flex
                       key={serviciu.uid}
                       gap={3}
@@ -392,7 +376,6 @@ const AddTerenModal = ({ isOpen, onClose, onSave, initialData }) => {
                           }
                         />
                       </CustomFormField>
-
                       <CustomFormField label="Preț (RON)" flex={1}>
                         <Input
                           type="text"
@@ -411,7 +394,6 @@ const AddTerenModal = ({ isOpen, onClose, onSave, initialData }) => {
                           }
                         />
                       </CustomFormField>
-
                       <Flex
                         as="button"
                         type="button"
@@ -437,7 +419,6 @@ const AddTerenModal = ({ isOpen, onClose, onSave, initialData }) => {
           </VStack>
         </Box>
 
-        {/* Footer */}
         <Flex
           justify="flex-end"
           p={5}
