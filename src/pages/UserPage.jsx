@@ -1,7 +1,5 @@
-import React, { useState } from "react";
 import { Box } from "@chakra-ui/react";
-
-// Importuri adaptate
+import { Outlet } from "react-router-dom";
 import { colors } from "./colors";
 import { Navigation } from "../components/Navigation";
 import HomeContent from "./HomeContent";
@@ -15,35 +13,6 @@ const NAV_ITEMS_USER = [
 ];
 
 const UserPage = () => {
-  const [activeTab, setActiveTab] = useState("home");
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case "home":
-        return <HomeContent />;
-      case "search":
-        return (
-          <Box color="white" p={10}>
-            Pagina Căutare (În lucru...)
-          </Box>
-        );
-      case "bookings":
-        return (
-          <Box color="white" p={10}>
-            Pagina Rezervări (În lucru...)
-          </Box>
-        );
-      case "profile":
-        return (
-          <Box color="white" p={10}>
-            Pagina Profil (În lucru...)
-          </Box>
-        );
-      default:
-        return <HomeContent />;
-    }
-  };
-
   return (
     <Box
       bg={colors.bgMain}
@@ -63,7 +32,8 @@ const UserPage = () => {
         pt={{ base: 6, md: 10 }}
         px={{ base: 4, md: 10, lg: 16 }}
       >
-        {renderContent()}
+        {/* Aici se vor randa componentele HomeContent, SearchContent, etc. */}
+        <Outlet />
       </Box>
     </Box>
   );
