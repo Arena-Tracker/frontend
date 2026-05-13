@@ -320,7 +320,7 @@ const ProfileContent = () => {
                       _hover={{ bg: "rgba(255, 95, 95, 0.08)" }}
                       transition="all 0.2s"
                     >
-                      ȘTERGE CONTUL
+                      LOG OUT
                     </Button>
                   </Flex>
                 </Box>
