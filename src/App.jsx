@@ -13,6 +13,7 @@ import HomeContent from "./pages/HomeContent";
 import SearchContent from "./pages/SearchContent";
 import FilterContent from "./pages/FilterContent";
 import { Box } from "@chakra-ui/react";
+import TerenuriManager from "./pages/TerenuriManager";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -26,7 +27,11 @@ function App() {
         <Route
           path="/user"
           element={
-            user?.role === "user" ? <UserPage user={user} /> : <Navigate to="/" />
+            user?.role === "user" ? (
+              <UserPage user={user} />
+            ) : (
+              <Navigate to="/" />
+            )
           }
         >
           {/* Rutele interioare care se vor incarca in Outlet */}
@@ -34,18 +39,55 @@ function App() {
           <Route path="home" element={<HomeContent />} />
           <Route path="search" element={<SearchContent />} />
           <Route path="search/filter/:sportType" element={<FilterContent />} />
-          <Route path="bookings" element={<Box color="white" p={10}>Pagina Rezervări</Box>} />
-          <Route path="profile" element={<Box color="white" p={10}>Pagina Profil</Box>} />
+          <Route
+            path="bookings"
+            element={
+              <Box color="white" p={10}>
+                Pagina Rezervări
+              </Box>
+            }
+          />
+          <Route
+            path="profile"
+            element={
+              <Box color="white" p={10}>
+                Pagina Profil
+              </Box>
+            }
+          />
         </Route>
 
         <Route
           path="/admin"
-          element={user?.role === "admin" ? <AdminPage user={user} /> : <Navigate to="/" />}
+          element={
+            user?.role === "admin" ? (
+              <AdminPage user={user} />
+            ) : (
+              <Navigate to="/" />
+            )
+          }
         />
-        <Route
-          path="/bazasportiva"
-          element={user?.role === "baza" ? <BazaPage user={user} /> : <Navigate to="/" />}
-        />
+        <Route path="/baza" element={<BazaPage />}>
+          <Route path="terenuri" element={<TerenuriManager />} />
+          <Route
+            path="rezervari"
+            element={
+              <Box p={10} color="white">
+                Pagina Rezervări
+              </Box>
+            }
+          />
+          <Route
+            path="profil"
+            element={
+              <Box p={10} color="white">
+                Profil Bază
+              </Box>
+            }
+          />
+          {/* Redirecționare implicită către terenuri dacă scrii doar /baza */}
+          <Route index element={<Navigate to="terenuri" replace />} />
+        </Route>
       </Routes>
     </Router>
   );

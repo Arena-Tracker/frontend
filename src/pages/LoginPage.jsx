@@ -28,7 +28,7 @@ const LoginPage = ({ onLogin }) => {
       navigate("/admin");
     } else if (username === "baza" && password === "baza") {
       onLogin({ name: "Complex Sportiv", role: "baza" });
-      navigate("/bazasportiva");
+      navigate("/baza");
     } else {
       setError("Utilizator sau parolă incorectă!");
     }
