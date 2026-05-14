@@ -11,6 +11,7 @@ import {
   VStack,
   Icon,
 } from "@chakra-ui/react";
+import { useNavigate } from "react-router-dom"; // Import adăugat pentru navigare
 import {
   FiSearch,
   FiMapPin,
@@ -250,48 +251,72 @@ const PremiumVenueCard = ({ venue, onReserve }) => (
   </Box>
 );
 
-const SectionLayout = ({ title, children }) => (
-  <Box w="full" mb={8}>
-    <Flex
-      justify="space-between"
-      align="flex-end"
-      mb={2}
-      px={{ base: 4, md: 8 }}
-    >
-      <Text
-        fontSize="lg"
-        fontWeight="900"
-        color={DS.colors.text}
-        letterSpacing="-0.5px"
+// Componenta de layout actualizată cu hook-ul de navigare
+const SectionLayout = ({
+  title,
+  children,
+  showViewAll = true,
+  viewAllPath,
+}) => {
+  const navigate = useNavigate();
+
+  return (
+    <Box w="full" mb={8}>
+      <Flex
+        justify="space-between"
+        align="flex-end"
+        mb={2}
+        px={{ base: 4, md: 8 }}
       >
-        {title}
-      </Text>
-      <Text
-        fontSize="xs"
-        fontWeight="700"
-        color={DS.colors.brand}
-        cursor="pointer"
-        _hover={{ textDecoration: "underline" }}
-        transition="all 0.2s"
+        <Text
+          fontSize="lg"
+          fontWeight="900"
+          color={DS.colors.text}
+          letterSpacing="-0.5px"
+        >
+          {title}
+        </Text>
+        {showViewAll && viewAllPath ? (
+          <Text
+            fontSize="xs"
+            fontWeight="700"
+            color={DS.colors.brand}
+            cursor="pointer"
+            onClick={() => navigate(viewAllPath)}
+            _hover={{ textDecoration: "underline" }}
+            transition="all 0.2s"
+          >
+            Vezi toate
+          </Text>
+        ) : showViewAll && !viewAllPath ? (
+          <Text
+            fontSize="xs"
+            fontWeight="700"
+            color={DS.colors.brand}
+            cursor="pointer"
+            _hover={{ textDecoration: "underline" }}
+            transition="all 0.2s"
+          >
+            Vezi toate
+          </Text>
+        ) : null}
+      </Flex>
+      <Flex
+        overflowX="auto"
+        gap={4}
+        px={{ base: 4, md: 8 }}
+        py={4}
+        sx={{
+          "&::-webkit-scrollbar": { display: "none" },
+          "-ms-overflow-style": "none",
+          "scrollbar-width": "none",
+        }}
       >
-        Vezi toate
-      </Text>
-    </Flex>
-    <Flex
-      overflowX="auto"
-      gap={4}
-      px={{ base: 4, md: 8 }}
-      py={4}
-      sx={{
-        "&::-webkit-scrollbar": { display: "none" },
-        "-ms-overflow-style": "none",
-        "scrollbar-width": "none",
-      }}
-    >
-      {children}
-    </Flex>
-  </Box>
-);
+        {children}
+      </Flex>
+    </Box>
+  );
+};
 
 const PremiumDropdown = ({ value, options, onChange, placeholder }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -682,13 +707,17 @@ const HomeContent = () => {
           </Box>
         </Box>
 
+        {/* SECȚIUNI ACTUALIZATE CU RUTE DE VIEW ALL */}
         <SectionLayout title="Sporturi" showViewAll={false}>
           {SPORT_CATEGORIES.map((sport) => (
             <PremiumSportCard key={sport.id} sport={sport} />
           ))}
         </SectionLayout>
 
-        <SectionLayout title="Recomandate pentru tine">
+        <SectionLayout
+          title="Recomandate pentru tine"
+          viewAllPath="/user/search/filter/toate?sort=recomandate"
+        >
           {DUMMY_VENUES.map((venue) => (
             <PremiumVenueCard
               key={venue.id}
@@ -698,7 +727,10 @@ const HomeContent = () => {
           ))}
         </SectionLayout>
 
-        <SectionLayout title="Populare în zona ta">
+        <SectionLayout
+          title="Populare în zona ta"
+          viewAllPath="/user/search/filter/toate?sort=populare"
+        >
           {[...DUMMY_VENUES].reverse().map((venue) => (
             <PremiumVenueCard
               key={`pop-${venue.id}`}
