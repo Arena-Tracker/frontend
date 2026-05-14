@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Flex, Text, VStack, Grid, Input, Badge, Button, Image } from "@chakra-ui/react";
+import { Box, Flex, Text, VStack, Grid, Badge, Button, Image } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
 
 // Iconițe
@@ -31,6 +31,12 @@ const LOCATIONS = [
   "Pantelimon", "Popesti Leordeni", "Voluntari", "Bragadiru"
 ];
 
+// NOU: Opțiunile pentru sortare formatate corect
+const SORT_OPTIONS = [
+  { label: "Preț: Crescător", value: "asc" },
+  { label: "Preț: Descrescător", value: "desc" }
+];
+
 // Date simulate pentru a popula grid-ul
 const DUMMY_VENUES = [
   { id: 1, title: "Arena Națională Premium", location: "Sector 2, București", price: "200 RON", rating: "4.9", reviews: 210, image: "https://images.unsplash.com/photo-1487466365202-1afdb86c764e?q=80&w=1173&auto=format&fit=crop", isNew: false },
@@ -41,7 +47,6 @@ const DUMMY_VENUES = [
 
 /**
  * @component PremiumVenueCard
- * Reutilizat pentru a păstra tema premium a aplicației
  */
 const PremiumVenueCard = ({ venue }) => (
   <Box
@@ -90,6 +95,69 @@ const PremiumVenueCard = ({ venue }) => (
     </VStack>
   </Box>
 );
+
+/**
+ * @component PremiumDropdown
+ * Construit de la zero (zero elemente native de sistem, complet customizabil, fără erori v3)
+ */
+const PremiumDropdown = ({ value, options, onChange, placeholder }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const handleSelect = (val) => {
+    onChange(val);
+    setIsOpen(false);
+  };
+
+  return (
+    <Box position="relative" w="full">
+      <Flex 
+        bg="transparent" 
+        border="1px solid" 
+        borderColor={isOpen ? DS.colors.brand : "whiteAlpha.200"} 
+        borderRadius="xl"
+        h="44px" 
+        px={4} 
+        align="center" 
+        justify="space-between" 
+        cursor="pointer" 
+        onClick={() => setIsOpen(!isOpen)}
+        transition={DS.transition}
+        _hover={{ borderColor: isOpen ? DS.colors.brand : "whiteAlpha.400" }}
+      >
+        <Text fontSize="sm" fontWeight="500" color={value ? DS.colors.text : DS.colors.muted}>
+          {options.find(o => (o.value || o) === value)?.label || value || placeholder}
+        </Text>
+        <FiChevronDown color={DS.colors.muted} style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "0.2s" }} />
+      </Flex>
+
+      {isOpen && (
+        <Box 
+          position="absolute" top="calc(100% + 8px)" left="0" w="full" zIndex={20} 
+          bg={DS.colors.card} border="1px solid" borderColor="whiteAlpha.100" 
+          borderRadius="xl" boxShadow="0 25px 50px -12px rgba(0,0,0,0.8)" 
+          maxH="250px" overflowY="auto" py={2}
+          sx={{ "&::-webkit-scrollbar": { width: "6px" }, "&::-webkit-scrollbar-thumb": { bg: "whiteAlpha.200", borderRadius: "full" } }}
+        >
+          <Flex px={4} py={2.5} cursor="pointer" onClick={() => handleSelect("")} _hover={{ color: DS.colors.brand }}>
+            <Text fontSize="sm" fontWeight="500" transition={DS.transition} color={!value ? DS.colors.brand : DS.colors.text}>{placeholder}</Text>
+          </Flex>
+          {options.map((opt) => {
+            const isObj = typeof opt === 'object';
+            const optValue = isObj ? opt.value : opt;
+            const optLabel = isObj ? opt.label : opt;
+            return (
+              <Flex key={optValue} px={4} py={2.5} cursor="pointer" onClick={() => handleSelect(optValue)} _hover={{ color: DS.colors.brand }}>
+                <Text fontSize="sm" fontWeight="500" transition={DS.transition} color={value === optValue ? DS.colors.brand : DS.colors.text}>
+                  {optLabel}
+                </Text>
+              </Flex>
+            );
+          })}
+        </Box>
+      )}
+    </Box>
+  );
+};
 
 
 const FilterContent = () => {
@@ -150,85 +218,26 @@ const FilterContent = () => {
             
             <VStack spacing={6} align="stretch">
               
-              {/* Filtru: Locație */}
+              {/* NOU: Filtru Locație Custom */}
               <Box>
                 <Text color={DS.colors.muted} mb={2} fontSize="xs" fontWeight="700" letterSpacing="0.5px">LOCAȚIE</Text>
-                <Flex 
-                  position="relative" 
-                  bg={DS.colors.input} 
-                  borderRadius="xl" 
-                  h="44px" 
-                  align="center" 
-                  border="1px solid" 
-                  borderColor="whiteAlpha.100" 
-                  _focusWithin={{ borderColor: DS.colors.brand }}
-                  transition={DS.transition}
-                >
-                  <Box
-                    as="select"
-                    w="full"
-                    h="full"
-                    px={4}
-                    bg="transparent"
-                    color={DS.colors.text}
-                    fontSize="sm"
-                    fontWeight="600"
-                    value={selectedLocation}
-                    onChange={(e) => setSelectedLocation(e.target.value)}
-                    outline="none"
-                    cursor="pointer"
-                    appearance="none"
-                  >
-                    <option value="" style={{ background: DS.colors.card, color: DS.colors.text }}>Toate locațiile</option>
-                    {LOCATIONS.map((loc) => (
-                      <option key={loc} value={loc} style={{ background: DS.colors.card, color: DS.colors.text }}>
-                        {loc}
-                      </option>
-                    ))}
-                  </Box>
-                  <Box position="absolute" right={4} pointerEvents="none" color={DS.colors.muted}>
-                    <FiChevronDown size={16} />
-                  </Box>
-                </Flex>
+                <PremiumDropdown 
+                  value={selectedLocation} 
+                  options={LOCATIONS} 
+                  onChange={setSelectedLocation} 
+                  placeholder="Toate locațiile" 
+                />
               </Box>
 
-              {/* Filtru: Sortare (Bonus) */}
+              {/* NOU: Filtru Sortare Custom */}
               <Box>
                 <Text color={DS.colors.muted} mb={2} fontSize="xs" fontWeight="700" letterSpacing="0.5px">SORTEAZĂ</Text>
-                <Flex 
-                  position="relative" 
-                  bg={DS.colors.input} 
-                  borderRadius="xl" 
-                  h="44px" 
-                  align="center" 
-                  border="1px solid" 
-                  borderColor="whiteAlpha.100" 
-                  _focusWithin={{ borderColor: DS.colors.brand }}
-                  transition={DS.transition}
-                >
-                  <Box
-                    as="select"
-                    w="full"
-                    h="full"
-                    px={4}
-                    bg="transparent"
-                    color={DS.colors.text}
-                    fontSize="sm"
-                    fontWeight="600"
-                    value={selectedSort}
-                    onChange={(e) => setSelectedSort(e.target.value)}
-                    outline="none"
-                    cursor="pointer"
-                    appearance="none"
-                  >
-                    <option value="" style={{ background: DS.colors.card, color: DS.colors.text }}>Recomandate</option>
-                    <option value="asc" style={{ background: DS.colors.card, color: DS.colors.text }}>Preț: Crescător</option>
-                    <option value="desc" style={{ background: DS.colors.card, color: DS.colors.text }}>Preț: Descrescător</option>
-                  </Box>
-                  <Box position="absolute" right={4} pointerEvents="none" color={DS.colors.muted}>
-                    <FiChevronDown size={16} />
-                  </Box>
-                </Flex>
+                <PremiumDropdown 
+                  value={selectedSort} 
+                  options={SORT_OPTIONS} 
+                  onChange={setSelectedSort} 
+                  placeholder="Recomandate" 
+                />
               </Box>
 
               <Button 

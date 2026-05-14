@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { Box, Flex, Text, VStack, Input, HStack, Image, Badge, Button } from "@chakra-ui/react";
-// S-a adăugat FiChevronDown pentru noul design al select-ului
-import { FiSearch, FiMapPin, FiStar, FiSliders, FiChevronDown } from "react-icons/fi";
+import { Box, Flex, Text, VStack, Input, HStack, Image, Badge, Button, IconButton, Grid } from "@chakra-ui/react";
+import { FiSearch, FiMapPin, FiStar, FiSliders, FiChevronDown, FiBell } from "react-icons/fi";
 import { FaFutbol, FaBasketballBall } from "react-icons/fa";
 import { GiTennisRacket, GiVolleyballBall } from "react-icons/gi";
 
@@ -87,7 +86,6 @@ const PremiumVenueCard = ({ venue }) => (
     _hover={{ transform: "translateY(-4px)", boxShadow: DS.shadow, borderColor: "whiteAlpha.200" }}
   >
     <Box position="relative" h="160px" w="full">
-      {/* S-a adăugat loading="lazy" pentru performanță la redare UI */}
       <Image src={venue.image} alt={venue.title} objectFit="cover" w="full" h="full" loading="lazy" />
       <Box position="absolute" top={0} left={0} w="full" h="full" bg="linear-gradient(180deg, rgba(0,0,0,0) 50%, #16181C 100%)" />
       
@@ -142,8 +140,8 @@ const SectionLayout = ({ title, children, showViewAll = true }) => (
       py={4} 
       sx={{
         "&::-webkit-scrollbar": { display: "none" },
-        "-ms-overflow-style": "none",  // IE and Edge
-        "scrollbar-width": "none",     // Firefox
+        "-ms-overflow-style": "none",
+        "scrollbar-width": "none",
       }}
     >
       {children}
@@ -151,10 +149,74 @@ const SectionLayout = ({ title, children, showViewAll = true }) => (
   </Box>
 );
 
+/**
+ * @component PremiumDropdown
+ * Versiunea integrată special pentru secțiunea Home (aliniată la 36px înălțime cu butoanele de categorii)
+ */
+const PremiumDropdown = ({ value, options, onChange, placeholder }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const handleSelect = (val) => {
+    onChange(val);
+    setIsOpen(false);
+  };
+
+  return (
+    <Box position="relative" w="full">
+      <Flex 
+        bg="blackAlpha.400" 
+        border="1px solid" 
+        borderColor={isOpen ? DS.colors.brand : "whiteAlpha.100"} 
+        borderRadius="xl"
+        h="36px" 
+        px={3} 
+        align="center" 
+        justify="space-between" 
+        cursor="pointer" 
+        onClick={() => setIsOpen(!isOpen)}
+        transition={DS.transition}
+        _hover={{ borderColor: isOpen ? DS.colors.brand : "whiteAlpha.300" }}
+      >
+        <Text fontSize="sm" fontWeight="600" color={value ? DS.colors.text : DS.colors.muted} isTruncated>
+          {options.find(o => o.value === value)?.label || value || placeholder}
+        </Text>
+        <FiChevronDown color={DS.colors.muted} style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "0.2s" }} />
+      </Flex>
+
+      {isOpen && (
+        <Box 
+          position="absolute" top="calc(100% + 6px)" left="0" w="full" zIndex={20} 
+          bg={DS.colors.card} border="1px solid" borderColor="whiteAlpha.100" 
+          borderRadius="xl" boxShadow="0 25px 50px -12px rgba(0,0,0,0.8)" 
+          maxH="250px" overflowY="auto" py={2}
+          sx={{ "&::-webkit-scrollbar": { width: "6px" }, "&::-webkit-scrollbar-thumb": { bg: "whiteAlpha.200", borderRadius: "full" } }}
+        >
+          <Flex px={4} py={2.5} cursor="pointer" onClick={() => handleSelect("")} _hover={{ color: DS.colors.brand }}>
+            <Text fontSize="sm" fontWeight="600" transition={DS.transition} color={!value ? DS.colors.brand : DS.colors.text}>{placeholder}</Text>
+          </Flex>
+          {options.map((opt) => (
+            <Flex key={opt.value} px={4} py={2.5} cursor="pointer" onClick={() => handleSelect(opt.value)} _hover={{ color: DS.colors.brand }}>
+              <Text fontSize="sm" fontWeight="600" transition={DS.transition} color={value === opt.value ? DS.colors.brand : DS.colors.text}>
+                {opt.label}
+              </Text>
+            </Flex>
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+};
+
 const HomeContent = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedSportFilter, setSelectedSportFilter] = useState(null);
   const [selectedLocation, setSelectedLocation] = useState("");
+
+  // Mapăm locațiile pentru a scoate underscore-ul (ex: "BUCURESTI_SECTOR1" -> "BUCURESTI SECTOR1")
+  const formattedLocations = LOCATIONS.map(loc => ({
+    label: loc.replace(/_/g, ' '),
+    value: loc
+  }));
 
   return (
     <Box position="relative" minH="100vh" bg={DS.colors.canvas} overflow="hidden" mt={{ base: -6, md: -10 }} mb={{ base: "-80px", md: -10 }} mx={{ base: -4, md: -10, lg: -16 }} py={{ base: 10, md: 16 }}>
@@ -214,7 +276,7 @@ const HomeContent = () => {
               cursor="pointer" 
               onClick={() => setShowFilters(!showFilters)}
               transition="all 0.2s"
-              _hover={{ color: DS.colors.text }}
+              _hover={{ color: DS.colors.brand }}
               display="flex"
               alignItems="center"
               justifyContent="center"
@@ -270,47 +332,15 @@ const HomeContent = () => {
                     </Flex>
                   </Box>
 
-                  {/* Filtru Locație Dropdown Custom */}
+                  {/* Filtru Locație Custom */}
                   <Box flex={1}>
                     <Text fontSize="10px" fontWeight="800" color={DS.colors.muted} letterSpacing="1px" mb={2}>LOCAȚIE</Text>
-                    <Flex 
-                      position="relative" // Setat relative pentru săgeata custom
-                      bg="blackAlpha.400" 
-                      borderRadius="xl" 
-                      h="36px" 
-                      align="center" 
-                      border="1px solid" 
-                      borderColor="whiteAlpha.100" 
-                      _focusWithin={{ borderColor: DS.colors.brand }}
-                      transition={DS.transition}
-                    >
-                      <Box
-                        as="select"
-                        w="full"
-                        h="full"
-                        px={3}
-                        bg="transparent"
-                        color={DS.colors.text}
-                        fontSize="sm"
-                        fontWeight="600"
-                        value={selectedLocation}
-                        onChange={(e) => setSelectedLocation(e.target.value)}
-                        outline="none"
-                        cursor="pointer"
-                        appearance="none" // Ascunde săgeata default urâtă de pe Windows/Mac
-                      >
-                        <option value="" style={{ background: DS.colors.card, color: DS.colors.text }}>Toate locațiile</option>
-                        {LOCATIONS.map((loc) => (
-                          <option key={loc} value={loc} style={{ background: DS.colors.card, color: DS.colors.text }}>
-                            {loc.replace(/_/g, ' ')}
-                          </option>
-                        ))}
-                      </Box>
-                      {/* Săgeata Custom */}
-                      <Box position="absolute" right={3} pointerEvents="none" color={DS.colors.muted}>
-                        <FiChevronDown size={16} />
-                      </Box>
-                    </Flex>
+                    <PremiumDropdown 
+                      value={selectedLocation} 
+                      options={formattedLocations} 
+                      onChange={setSelectedLocation} 
+                      placeholder="Toate locațiile" 
+                    />
                   </Box>
 
                 </Flex>
