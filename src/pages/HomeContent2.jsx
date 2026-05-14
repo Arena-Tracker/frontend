@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Box, Flex, Text, VStack, Input, HStack, Image, Badge, Button, IconButton, Grid } from "@chakra-ui/react";
-import { FiSearch, FiMapPin, FiStar, FiSliders, FiChevronDown, FiBell } from "react-icons/fi";
+// Fără IconButton și Icon din Chakra, pentru stabilitate absolută pe v3
+import { Box, Flex, Text, VStack, Input, HStack, Image, Badge, Button, Grid } from "@chakra-ui/react";
+import { FiSearch, FiMapPin, FiStar, FiSliders, FiChevronDown, FiBell, FiSquare, FiCheckSquare } from "react-icons/fi";
 import { FaFutbol, FaBasketballBall } from "react-icons/fa";
 import { GiTennisRacket, GiVolleyballBall } from "react-icons/gi";
 
@@ -50,17 +51,9 @@ const PremiumSportCard = ({ sport }) => {
   const IconComponent = sport.icon;
   return (
     <Flex
-      direction="column"
-      align="center"
-      justify="center"
-      bg={DS.colors.card}
-      border={DS.border}
-      borderRadius="2xl"
-      minW="100px"
-      h="100px"
-      gap={3}
-      cursor="pointer"
-      transition={DS.transition}
+      direction="column" align="center" justify="center"
+      bg={DS.colors.card} border={DS.border} borderRadius="2xl"
+      minW="100px" h="100px" gap={3} cursor="pointer" transition={DS.transition}
       _hover={{ transform: "translateY(-4px)", borderColor: sport.color, boxShadow: `0 8px 20px -5px ${sport.color}40` }}
     >
       <Box color={sport.color}>
@@ -76,13 +69,8 @@ const PremiumSportCard = ({ sport }) => {
  */
 const PremiumVenueCard = ({ venue }) => (
   <Box
-    minW={{ base: "280px", md: "320px" }}
-    bg={DS.colors.card}
-    borderRadius="2xl"
-    overflow="hidden"
-    border={DS.border}
-    cursor="pointer"
-    transition={DS.transition}
+    minW={{ base: "280px", md: "320px" }} bg={DS.colors.card} borderRadius="2xl"
+    overflow="hidden" border={DS.border} cursor="pointer" transition={DS.transition}
     _hover={{ transform: "translateY(-4px)", boxShadow: DS.shadow, borderColor: "whiteAlpha.200" }}
   >
     <Box position="relative" h="160px" w="full">
@@ -105,7 +93,7 @@ const PremiumVenueCard = ({ venue }) => (
         <Text fontSize="md" fontWeight="800" color={DS.colors.text} noOfLines={1}>{venue.title}</Text>
         <Flex align="center" gap={1.5} mt={1} color={DS.colors.muted}>
           <FiMapPin size={12} />
-          <Text fontSize="xs" fontWeight="600">{venue.location}</Text>
+          <Text fontSize="xs" fontWeight="600" isTruncated>{venue.location}</Text>
         </Flex>
       </Box>
 
@@ -133,17 +121,7 @@ const SectionLayout = ({ title, children, showViewAll = true }) => (
         <Text fontSize="xs" fontWeight="700" color={DS.colors.brand} cursor="pointer" _hover={{ textDecoration: "underline" }} transition="all 0.2s">Vezi toate</Text>
       )}
     </Flex>
-    <Flex
-      overflowX="auto"
-      gap={4}
-      px={{ base: 4, md: 8 }}
-      py={4} 
-      sx={{
-        "&::-webkit-scrollbar": { display: "none" },
-        "-ms-overflow-style": "none",
-        "scrollbar-width": "none",
-      }}
-    >
+    <Flex overflowX="auto" gap={4} px={{ base: 4, md: 8 }} py={4} sx={{ "&::-webkit-scrollbar": { display: "none" }, "-ms-overflow-style": "none", "scrollbar-width": "none" }}>
       {children}
     </Flex>
   </Box>
@@ -151,54 +129,55 @@ const SectionLayout = ({ title, children, showViewAll = true }) => (
 
 /**
  * @component PremiumDropdown
- * Versiunea integrată special pentru secțiunea Home (aliniată la 36px înălțime cu butoanele de categorii)
  */
 const PremiumDropdown = ({ value, options, onChange, placeholder }) => {
   const [isOpen, setIsOpen] = useState(false);
-  
-  const handleSelect = (val) => {
-    onChange(val);
-    setIsOpen(false);
-  };
+  const handleSelect = (val) => { onChange(val); setIsOpen(false); };
+  const selectedOption = options.find(o => o.value === value);
+  const buttonLabel = selectedOption ? selectedOption.label : placeholder;
 
   return (
     <Box position="relative" w="full">
       <Flex 
-        bg="blackAlpha.400" 
-        border="1px solid" 
-        borderColor={isOpen ? DS.colors.brand : "whiteAlpha.100"} 
-        borderRadius="xl"
-        h="36px" 
-        px={3} 
-        align="center" 
-        justify="space-between" 
-        cursor="pointer" 
-        onClick={() => setIsOpen(!isOpen)}
-        transition={DS.transition}
-        _hover={{ borderColor: isOpen ? DS.colors.brand : "whiteAlpha.300" }}
+        bg="blackAlpha.400" border="1px solid" borderColor={isOpen ? DS.colors.brand : "whiteAlpha.100"} borderRadius="xl"
+        h="36px" px={3} align="center" justify="space-between" cursor="pointer" onClick={() => setIsOpen(!isOpen)} transition={DS.transition} _hover={{ borderColor: isOpen ? DS.colors.brand : "whiteAlpha.300" }}
       >
-        <Text fontSize="sm" fontWeight="600" color={value ? DS.colors.text : DS.colors.muted} isTruncated>
-          {options.find(o => o.value === value)?.label || value || placeholder}
-        </Text>
+        <HStack spacing={2} maxW="calc(100% - 20px)" isTruncated>
+          <Box color={selectedOption ? DS.colors.brand : DS.colors.muted}>
+            {selectedOption ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
+          </Box>
+          <Text fontSize="sm" fontWeight="600" color={selectedOption ? DS.colors.text : DS.colors.muted} isTruncated>
+            {buttonLabel}
+          </Text>
+        </HStack>
         <FiChevronDown color={DS.colors.muted} style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "0.2s" }} />
       </Flex>
-
+      
       {isOpen && (
         <Box 
-          position="absolute" top="calc(100% + 6px)" left="0" w="full" zIndex={20} 
+          position="absolute" top="calc(100% + 6px)" left="0" w="full" zIndex={9999} 
           bg={DS.colors.card} border="1px solid" borderColor="whiteAlpha.100" 
           borderRadius="xl" boxShadow="0 25px 50px -12px rgba(0,0,0,0.8)" 
           maxH="250px" overflowY="auto" py={2}
           sx={{ "&::-webkit-scrollbar": { width: "6px" }, "&::-webkit-scrollbar-thumb": { bg: "whiteAlpha.200", borderRadius: "full" } }}
         >
-          <Flex px={4} py={2.5} cursor="pointer" onClick={() => handleSelect("")} _hover={{ color: DS.colors.brand }}>
-            <Text fontSize="sm" fontWeight="600" transition={DS.transition} color={!value ? DS.colors.brand : DS.colors.text}>{placeholder}</Text>
+          <Flex px={4} py={2.5} cursor="pointer" onClick={() => handleSelect("")} _hover={{ color: DS.colors.brand }} transition={DS.transition} color={!selectedOption ? DS.colors.brand : DS.colors.text}>
+             <HStack spacing={2}>
+               <Box color={!selectedOption ? DS.colors.brand : DS.colors.muted}>
+                 {!selectedOption ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
+               </Box>
+               <Text fontSize="sm" fontWeight="600">{placeholder}</Text>
+             </HStack>
           </Flex>
+          
           {options.map((opt) => (
-            <Flex key={opt.value} px={4} py={2.5} cursor="pointer" onClick={() => handleSelect(opt.value)} _hover={{ color: DS.colors.brand }}>
-              <Text fontSize="sm" fontWeight="600" transition={DS.transition} color={value === opt.value ? DS.colors.brand : DS.colors.text}>
-                {opt.label}
-              </Text>
+            <Flex key={opt.value} px={4} py={2.5} cursor="pointer" onClick={() => handleSelect(opt.value)} _hover={{ color: DS.colors.brand }} transition={DS.transition} color={value === opt.value ? DS.colors.brand : DS.colors.text}>
+              <HStack spacing={2}>
+                 <Box color={value === opt.value ? DS.colors.brand : DS.colors.muted}>
+                   {value === opt.value ? <FiCheckSquare size={16} /> : <FiSquare size={16} />}
+                 </Box>
+                 <Text fontSize="sm" fontWeight="600" isTruncated>{opt.label}</Text>
+              </HStack>
             </Flex>
           ))}
         </Box>
@@ -212,7 +191,6 @@ const HomeContent = () => {
   const [selectedSportFilter, setSelectedSportFilter] = useState(null);
   const [selectedLocation, setSelectedLocation] = useState("");
 
-  // Mapăm locațiile pentru a scoate underscore-ul (ex: "BUCURESTI_SECTOR1" -> "BUCURESTI SECTOR1")
   const formattedLocations = LOCATIONS.map(loc => ({
     label: loc.replace(/_/g, ' '),
     value: loc
@@ -221,7 +199,6 @@ const HomeContent = () => {
   return (
     <Box position="relative" minH="100vh" bg={DS.colors.canvas} overflow="hidden" mt={{ base: -6, md: -10 }} mb={{ base: "-80px", md: -10 }} mx={{ base: -4, md: -10, lg: -16 }} py={{ base: 10, md: 16 }}>
       
-      {/* FUNDAL ABSTRACT */}
       <Box position="absolute" top="-10%" left="-10%" w="70vw" h="70vw" bg="radial-gradient(circle, rgba(94, 209, 190, 0.08) 0%, transparent 60%)" zIndex="0" pointerEvents="none" />
       <Box position="absolute" bottom="20%" right="-10%" w="70vw" h="70vw" bg="radial-gradient(circle, rgba(41, 128, 185, 0.08) 0%, transparent 60%)" zIndex="0" pointerEvents="none" />
 
@@ -233,127 +210,60 @@ const HomeContent = () => {
             <Text fontSize="sm" color={DS.colors.muted} fontWeight="700">Salutare, Alexandru! 👋</Text>
             <Text fontSize="2xl" color={DS.colors.text} fontWeight="900" letterSpacing="-1px">Găsește terenul perfect</Text>
           </Box>
+          {/* FIX: Am înlocuit IconButton cu o componentă standard Flex imună la bug-uri Chakra v3 */}
+          <Flex as="button" boxSize="44px" align="center" justify="center" bg={DS.colors.card} border={DS.border} borderRadius="xl" color={DS.colors.text} transition={DS.transition} _hover={{ bg: "whiteAlpha.200" }}>
+            <FiBell size={20} />
+          </Flex>
         </Flex>
 
         {/* SEARCH BAR & FILTERS ACCORDION */}
         <Box px={{ base: 4, md: 8 }} mb={10}>
-          
           <Flex 
-            align="center" 
-            bg="rgba(22, 24, 28, 0.7)" 
-            backdropFilter="blur(10px)"
-            borderRadius={showFilters ? "2xl 2xl 0 0" : "2xl"} 
-            px={5} 
-            h="64px" 
-            border="1px solid"
-            borderColor="whiteAlpha.100"
-            borderBottomColor={showFilters ? "transparent" : "whiteAlpha.100"}
-            boxShadow="0 10px 30px -10px rgba(0,0,0,0.3)"
-            transition={DS.transition}
-            _focusWithin={{ borderColor: DS.colors.brand, bg: DS.colors.input }}
-            position="relative"
-            zIndex={3}
-            gap={3}
+            align="center" bg="rgba(22, 24, 28, 0.7)" backdropFilter="blur(10px)" borderRadius={showFilters ? "2xl 2xl 0 0" : "2xl"} 
+            px={5} h="64px" border="1px solid" borderColor="whiteAlpha.100" borderBottomColor={showFilters ? "transparent" : "whiteAlpha.100"}
+            boxShadow="0 10px 30px -10px rgba(0,0,0,0.3)" transition={DS.transition} _focusWithin={{ borderColor: DS.colors.brand, bg: DS.colors.input }}
+            position="relative" zIndex={3} gap={3}
           >
-            <Box color={DS.colors.muted}>
-              <FiSearch size={20} />
-            </Box>
-            <Input 
-              placeholder="Caută după nume..." 
-              border="none" 
-              bg="transparent"
-              color={DS.colors.text} 
-              fontSize="md"
-              fontWeight="600"
-              _placeholder={{ color: "whiteAlpha.400" }}
-              _focus={{ outline: "none", boxShadow: "none" }} 
-              _focusVisible={{ outline: "none", boxShadow: "none" }}
-            />
+            <Box color={DS.colors.muted}><FiSearch size={20} /></Box>
+            <Input placeholder="Caută după nume..." border="none" bg="transparent" color={DS.colors.text} fontSize="md" fontWeight="600" _placeholder={{ color: "whiteAlpha.400" }} _focus={{ outline: "none", boxShadow: "none" }} />
             <Box w="1px" h="50%" bg="whiteAlpha.200" />
-            <Box 
-              as="button"
-              color={showFilters ? DS.colors.brand : DS.colors.muted} 
-              cursor="pointer" 
-              onClick={() => setShowFilters(!showFilters)}
-              transition="all 0.2s"
-              _hover={{ color: DS.colors.brand }}
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-            >
+            <Box as="button" color={showFilters ? DS.colors.brand : DS.colors.muted} cursor="pointer" onClick={() => setShowFilters(!showFilters)} transition="all 0.2s" _hover={{ color: DS.colors.brand }} display="flex" alignItems="center" justifyContent="center">
               <FiSliders size={20} />
             </Box>
           </Flex>
 
           {/* Panoul de Filtre */}
           <Box
-            display="grid"
-            gridTemplateRows={showFilters ? "1fr" : "0fr"}
-            transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-            opacity={showFilters ? 1 : 0}
-            position="relative"
-            zIndex={2}
+            display="grid" gridTemplateRows={showFilters ? "1fr" : "0fr"} transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+            opacity={showFilters ? 1 : 0} position="relative" zIndex={2}
           >
-            <Box overflow="hidden">
-              <Box 
-                bg="rgba(22, 24, 28, 0.85)" 
-                backdropFilter="blur(15px)"
-                p={5}
-                borderRadius="0 0 2xl 2xl" 
-                border="1px solid"
-                borderColor="whiteAlpha.100"
-                borderTop="none"
-                boxShadow="0 20px 40px -10px rgba(0,0,0,0.5)"
-              >
+            {/* FIX pentru clipping dropdown: Anulează overflow hidden imediat ce panoul se deschide */}
+            <Box overflow={showFilters ? "visible" : "hidden"}>
+              <Box bg="rgba(22, 24, 28, 0.85)" backdropFilter="blur(15px)" p={5} borderRadius="0 0 2xl 2xl" border="1px solid" borderColor="whiteAlpha.100" borderTop="none" boxShadow="0 20px 40px -10px rgba(0,0,0,0.5)">
                 <Flex direction={{ base: "column", md: "row" }} gap={6} mb={5}>
                   
-                  {/* Filtru Categorie Sport */}
                   <Box flex={1}>
                     <Text fontSize="10px" fontWeight="800" color={DS.colors.muted} letterSpacing="1px" mb={2}>CATEGORIE</Text>
                     <Flex wrap="wrap" gap={2}>
                       {SPORT_CATEGORIES.map(sport => (
-                        <Button
-                          key={sport.id}
-                          size="sm"
-                          h="36px"
-                          bg={selectedSportFilter === sport.id ? DS.colors.brand : "whiteAlpha.50"}
-                          color={selectedSportFilter === sport.id ? DS.colors.card : DS.colors.text}
-                          border="1px solid"
-                          borderColor={selectedSportFilter === sport.id ? DS.colors.brand : "whiteAlpha.100"}
-                          borderRadius="xl"
-                          fontWeight="700"
-                          onClick={() => setSelectedSportFilter(sport.id === selectedSportFilter ? null : sport.id)}
-                          _hover={{ bg: selectedSportFilter === sport.id ? DS.colors.brand : "whiteAlpha.200" }}
-                          transition={DS.transition}
-                        >
+                        <Button key={sport.id} size="sm" h="36px" px={4} bg={selectedSportFilter === sport.id ? "transparent" : "transparent"} color={selectedSportFilter === sport.id ? DS.colors.brand : DS.colors.text} border="1px solid" borderColor={selectedSportFilter === sport.id ? DS.colors.brand : "whiteAlpha.200"} borderRadius="xl" fontWeight="700" onClick={() => setSelectedSportFilter(sport.id === selectedSportFilter ? null : sport.id)} _hover={{ borderColor: selectedSportFilter === sport.id ? DS.colors.brand : "whiteAlpha.400" }} transition={DS.transition}>
                           {sport.name}
                         </Button>
                       ))}
                     </Flex>
                   </Box>
 
-                  {/* Filtru Locație Custom */}
                   <Box flex={1}>
                     <Text fontSize="10px" fontWeight="800" color={DS.colors.muted} letterSpacing="1px" mb={2}>LOCAȚIE</Text>
-                    <PremiumDropdown 
-                      value={selectedLocation} 
-                      options={formattedLocations} 
-                      onChange={setSelectedLocation} 
-                      placeholder="Toate locațiile" 
-                    />
+                    <PremiumDropdown value={selectedLocation} options={formattedLocations} onChange={setSelectedLocation} placeholder="Toate locațiile" />
                   </Box>
 
                 </Flex>
 
                 <HStack spacing={4}>
-                  <Button flex={1} variant="unstyled" color={DS.colors.text} bg="whiteAlpha.50" border="1px solid" borderColor="whiteAlpha.100" h="40px" borderRadius="lg" fontWeight="700" fontSize="xs" onClick={() => { setSelectedSportFilter(null); setSelectedLocation(""); }} _hover={{ bg: "whiteAlpha.200" }} transition={DS.transition}>
-                    Resetează
-                  </Button>
-                  <Button flex={1} bg={DS.colors.brand} color={DS.colors.card} h="40px" borderRadius="lg" fontWeight="800" fontSize="xs" onClick={() => setShowFilters(false)} _hover={{ opacity: 0.9, transform: "translateY(-1px)" }} transition={DS.transition}>
-                    Aplică filtre
-                  </Button>
+                  <Button flex={1} variant="unstyled" color={DS.colors.text} bg="whiteAlpha.50" border="1px solid" borderColor="whiteAlpha.100" h="40px" borderRadius="lg" fontWeight="700" fontSize="xs" onClick={() => { setSelectedSportFilter(null); setSelectedLocation(""); }} _hover={{ bg: "whiteAlpha.200" }} transition={DS.transition}>Resetează</Button>
+                  <Button flex={1} bg={DS.colors.brand} color={DS.colors.card} h="40px" borderRadius="lg" fontWeight="800" fontSize="xs" onClick={() => setShowFilters(false)} _hover={{ opacity: 0.9, transform: "translateY(-1px)" }} transition={DS.transition}>Aplică filtre</Button>
                 </HStack>
-
               </Box>
             </Box>
           </Box>
@@ -361,23 +271,17 @@ const HomeContent = () => {
 
         {/* SPORT CATEGORIES */}
         <SectionLayout title="Sporturi" showViewAll={false}>
-          {SPORT_CATEGORIES.map((sport) => (
-            <PremiumSportCard key={sport.id} sport={sport} />
-          ))}
+          {SPORT_CATEGORIES.map((sport) => <PremiumSportCard key={sport.id} sport={sport} />)}
         </SectionLayout>
 
         {/* RECOMANDARI */}
         <SectionLayout title="Recomandate pentru tine">
-          {DUMMY_VENUES.map((venue) => (
-            <PremiumVenueCard key={venue.id} venue={venue} />
-          ))}
+          {DUMMY_VENUES.map((venue) => <PremiumVenueCard key={venue.id} venue={venue} />)}
         </SectionLayout>
 
         {/* POPULARE ACUM */}
         <SectionLayout title="Populare în zona ta">
-          {[...DUMMY_VENUES].reverse().map((venue) => (
-            <PremiumVenueCard key={`pop-${venue.id}`} venue={venue} />
-          ))}
+          {[...DUMMY_VENUES].reverse().map((venue) => <PremiumVenueCard key={`pop-${venue.id}`} venue={venue} />)}
         </SectionLayout>
 
       </Box>
