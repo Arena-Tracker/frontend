@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Box, Flex, Text, VStack, Grid, Badge, Button, Image } from "@chakra-ui/react";
+import { Box, Flex, Text, VStack, Grid, Badge, Button, Image, Input } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
 
 // Iconițe
-import { FiMapPin, FiStar, FiChevronDown, FiFilter } from "react-icons/fi";
+import { FiMapPin, FiStar, FiChevronDown, FiFilter, FiSearch } from "react-icons/fi";
 
 /**
  * @constant DESIGN_SYSTEM
@@ -24,6 +24,14 @@ const DS = {
   transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
 };
 
+const CATEGORIES = [
+  { label: "Fotbal", value: "fotbal" },
+  { label: "Baschet", value: "baschet" },
+  { label: "Tenis", value: "tenis" },
+  { label: "Volei", value: "volei" },
+  { label: "Ping-Pong", value: "pingpong" },
+];
+
 const LOCATIONS = [
   "Bucuresti Sector 1", "Bucuresti Sector 2", "Bucuresti Sector 3",
   "Bucuresti Sector 4", "Bucuresti Sector 5", "Bucuresti Sector 6",
@@ -31,7 +39,6 @@ const LOCATIONS = [
   "Pantelimon", "Popesti Leordeni", "Voluntari", "Bragadiru"
 ];
 
-// NOU: Opțiunile pentru sortare formatate corect
 const SORT_OPTIONS = [
   { label: "Preț: Crescător", value: "asc" },
   { label: "Preț: Descrescător", value: "desc" }
@@ -98,33 +105,36 @@ const PremiumVenueCard = ({ venue }) => (
 
 /**
  * @component PremiumDropdown
- * Construit de la zero (zero elemente native de sistem, complet customizabil, fără erori v3)
  */
-const PremiumDropdown = ({ value, options, onChange, placeholder }) => {
-  const [isOpen, setIsOpen] = useState(false);
+const PremiumDropdown = ({ id, openDropdownId, setOpenDropdownId, value, options, onChange, placeholder }) => {
+  const isOpen = openDropdownId === id; 
   
   const handleSelect = (val) => {
     onChange(val);
-    setIsOpen(false);
+    setOpenDropdownId(null); 
+  };
+
+  const toggleDropdown = () => {
+    setOpenDropdownId(isOpen ? null : id); 
   };
 
   return (
-    <Box position="relative" w="full">
+    <Box position="relative" w="full" zIndex={isOpen ? 100 : 1}>
       <Flex 
-        bg="transparent" 
+        bg={DS.colors.input} 
         border="1px solid" 
-        borderColor={isOpen ? DS.colors.brand : "whiteAlpha.200"} 
+        borderColor={isOpen ? DS.colors.brand : "whiteAlpha.100"} 
         borderRadius="xl"
         h="44px" 
         px={4} 
         align="center" 
         justify="space-between" 
         cursor="pointer" 
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleDropdown}
         transition={DS.transition}
-        _hover={{ borderColor: isOpen ? DS.colors.brand : "whiteAlpha.400" }}
+        _hover={{ borderColor: isOpen ? DS.colors.brand : "whiteAlpha.300" }}
       >
-        <Text fontSize="sm" fontWeight="500" color={value ? DS.colors.text : DS.colors.muted}>
+        <Text fontSize="sm" fontWeight="600" color={value ? DS.colors.text : DS.colors.muted}>
           {options.find(o => (o.value || o) === value)?.label || value || placeholder}
         </Text>
         <FiChevronDown color={DS.colors.muted} style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "0.2s" }} />
@@ -132,14 +142,14 @@ const PremiumDropdown = ({ value, options, onChange, placeholder }) => {
 
       {isOpen && (
         <Box 
-          position="absolute" top="calc(100% + 8px)" left="0" w="full" zIndex={20} 
+          position="absolute" top="calc(100% + 6px)" left="0" w="full" 
           bg={DS.colors.card} border="1px solid" borderColor="whiteAlpha.100" 
-          borderRadius="xl" boxShadow="0 25px 50px -12px rgba(0,0,0,0.8)" 
+          borderRadius="xl" boxShadow="0 25px 50px -12px rgba(0,0,0,0.9)" 
           maxH="250px" overflowY="auto" py={2}
           sx={{ "&::-webkit-scrollbar": { width: "6px" }, "&::-webkit-scrollbar-thumb": { bg: "whiteAlpha.200", borderRadius: "full" } }}
         >
           <Flex px={4} py={2.5} cursor="pointer" onClick={() => handleSelect("")} _hover={{ color: DS.colors.brand }}>
-            <Text fontSize="sm" fontWeight="500" transition={DS.transition} color={!value ? DS.colors.brand : DS.colors.text}>{placeholder}</Text>
+            <Text fontSize="sm" fontWeight="600" transition={DS.transition} color={!value ? DS.colors.brand : DS.colors.text}>{placeholder}</Text>
           </Flex>
           {options.map((opt) => {
             const isObj = typeof opt === 'object';
@@ -147,7 +157,7 @@ const PremiumDropdown = ({ value, options, onChange, placeholder }) => {
             const optLabel = isObj ? opt.label : opt;
             return (
               <Flex key={optValue} px={4} py={2.5} cursor="pointer" onClick={() => handleSelect(optValue)} _hover={{ color: DS.colors.brand }}>
-                <Text fontSize="sm" fontWeight="500" transition={DS.transition} color={value === optValue ? DS.colors.brand : DS.colors.text}>
+                <Text fontSize="sm" fontWeight="600" transition={DS.transition} color={value === optValue ? DS.colors.brand : DS.colors.text}>
                   {optLabel}
                 </Text>
               </Flex>
@@ -162,10 +172,36 @@ const PremiumDropdown = ({ value, options, onChange, placeholder }) => {
 
 const FilterContent = () => {
   const { sportType } = useParams();
-  const title = sportType ? sportType.charAt(0).toUpperCase() + sportType.slice(1) : "Sport";
+  
+  // Dacă din link primim "toate", îl transformăm în string gol pentru a nu selecta o categorie anume.
+  const initialCategory = sportType === "toate" ? "" : (sportType || "");
 
+  const [openDropdownId, setOpenDropdownId] = useState(null);
+  
+  // State-uri pentru Filtre (Local/Pending)
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedLocation, setSelectedLocation] = useState("");
   const [selectedSort, setSelectedSort] = useState("");
+
+  const [appliedCategory, setAppliedCategory] = useState(initialCategory);
+
+  // Logică smart pentru titlu
+  const displayTitle = appliedCategory 
+    ? `Terenuri de ${appliedCategory.charAt(0).toUpperCase() + appliedCategory.slice(1)}` 
+    : "Toate Terenurile";
+
+  // Formatăm locațiile
+  const formattedLocations = LOCATIONS.map(loc => ({
+    label: loc.replace(/_/g, ' '),
+    value: loc
+  }));
+
+  const handleApplyFilters = () => {
+    setAppliedCategory(selectedCategory);
+    setOpenDropdownId(null); 
+    // TODO: Apel Backend
+  };
 
   return (
     <Box 
@@ -190,12 +226,12 @@ const FilterContent = () => {
             Rezultate Căutare
           </Text>
           <Text fontSize={{ base: "3xl", md: "4xl" }} fontWeight="900" color={DS.colors.text} letterSpacing="-1px">
-            Terenuri de {title}
+            {displayTitle}
           </Text>
         </VStack>
 
         {/* LAYOUT PRINCIPAL: Sidebar (Stânga) + Grid (Dreapta) */}
-        <Box display={{ base: "block", lg: "grid" }} gridTemplateColumns={{ lg: "280px 1fr" }} gap={8}>
+        <Box display={{ base: "block", lg: "grid" }} gridTemplateColumns={{ lg: "300px 1fr" }} gap={8}>
           
           {/* SIDEBAR FILTRE */}
           <Box 
@@ -205,34 +241,75 @@ const FilterContent = () => {
             border={DS.border}
             boxShadow={DS.shadow}
             position={{ lg: "sticky" }} 
-            top={{ lg: "100px" }} // Păstrează sidebar-ul fix la scroll pe desktop
+            top={{ lg: "100px" }}
             h="fit-content"
             mb={{ base: 8, lg: 0 }}
           >
-            <Flex align="center" gap={2} mb={6}>
+            <Flex align="center" gap={2} mb={5}>
               <FiFilter color={DS.colors.brand} />
-              <Text color={DS.colors.text} fontWeight="800" fontSize="lg">Filtre</Text>
+              <Text color={DS.colors.text} fontWeight="800" fontSize="lg">Filtre Căutare</Text>
             </Flex>
             
             <Box w="100%" borderBottom="1px solid" borderColor="whiteAlpha.100" mb={6} />
             
-            <VStack spacing={6} align="stretch">
+            <VStack spacing={5} align="stretch">
+
+              {/* SEARCH BAR CUSTOM */}
+              <Box>
+                <Text color={DS.colors.muted} mb={2} fontSize="xs" fontWeight="700" letterSpacing="0.5px">CAUTĂ NUME</Text>
+                <Flex 
+                  align="center" bg={DS.colors.input} borderRadius="xl" px={4} h="44px" 
+                  border="1px solid" borderColor="whiteAlpha.100" _focusWithin={{ borderColor: DS.colors.brand }} 
+                  transition={DS.transition}
+                >
+                  <FiSearch color={DS.colors.muted} />
+                  <Input 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Ex: Arena..." 
+                    border="none" bg="transparent" color={DS.colors.text} 
+                    fontSize="sm" fontWeight="600" 
+                    _focus={{ outline: "none", boxShadow: "none" }} _placeholder={{ color: "whiteAlpha.300" }} 
+                    px={3}
+                  />
+                </Flex>
+              </Box>
+
+              {/* FILTRU CATEGORIE (SPORT) */}
+              <Box>
+                <Text color={DS.colors.muted} mb={2} fontSize="xs" fontWeight="700" letterSpacing="0.5px">CATEGORIE SPORT</Text>
+                <PremiumDropdown 
+                  id="category"
+                  openDropdownId={openDropdownId}
+                  setOpenDropdownId={setOpenDropdownId}
+                  value={selectedCategory} 
+                  options={CATEGORIES} 
+                  onChange={setSelectedCategory} 
+                  placeholder="Toate sporturile" 
+                />
+              </Box>
               
-              {/* NOU: Filtru Locație Custom */}
+              {/* FILTRU LOCAȚIE */}
               <Box>
                 <Text color={DS.colors.muted} mb={2} fontSize="xs" fontWeight="700" letterSpacing="0.5px">LOCAȚIE</Text>
                 <PremiumDropdown 
+                  id="location"
+                  openDropdownId={openDropdownId}
+                  setOpenDropdownId={setOpenDropdownId}
                   value={selectedLocation} 
-                  options={LOCATIONS} 
+                  options={formattedLocations} 
                   onChange={setSelectedLocation} 
                   placeholder="Toate locațiile" 
                 />
               </Box>
 
-              {/* NOU: Filtru Sortare Custom */}
+              {/* FILTRU SORTARE */}
               <Box>
                 <Text color={DS.colors.muted} mb={2} fontSize="xs" fontWeight="700" letterSpacing="0.5px">SORTEAZĂ</Text>
                 <PremiumDropdown 
+                  id="sort"
+                  openDropdownId={openDropdownId}
+                  setOpenDropdownId={setOpenDropdownId}
                   value={selectedSort} 
                   options={SORT_OPTIONS} 
                   onChange={setSelectedSort} 
@@ -243,13 +320,14 @@ const FilterContent = () => {
               <Button 
                 w="100%" 
                 h="48px"
-                mt={4}
+                mt={2}
                 bg={DS.colors.brand} 
-                color={DS.colors.card} 
-                fontWeight="800" 
+                color="black" 
+                fontWeight="900" 
                 borderRadius="xl"
                 _hover={{ opacity: 0.9, transform: "translateY(-2px)" }}
                 transition={DS.transition}
+                onClick={handleApplyFilters}
               >
                 Aplică Filtre
               </Button>
@@ -266,7 +344,6 @@ const FilterContent = () => {
               {DUMMY_VENUES.map((venue) => (
                 <PremiumVenueCard key={venue.id} venue={venue} />
               ))}
-              {/* Am mai pus date o dată doar ca să umplem grila vizual pentru demo */}
               {DUMMY_VENUES.map((venue) => (
                 <PremiumVenueCard key={`dup-${venue.id}`} venue={venue} />
               ))}

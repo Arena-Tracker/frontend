@@ -25,8 +25,8 @@ import {
   FiAlertTriangle,
   FiDownloadCloud,
 } from "react-icons/fi";
-import { FaFutbol, FaBasketballBall, FaTableTennis } from "react-icons/fa";
-
+import { FaFutbol, FaBasketballBall} from "react-icons/fa";
+import { GiTennisRacket} from "react-icons/gi";
 /**
  * @constant DESIGN_SYSTEM
  */
@@ -55,7 +55,7 @@ const BOOKINGS_DATA = [
     icon: FaFutbol,
     color: "#5ED1BE",
     date: "Azi, 24 Oct",
-    time: "19:00 - 21:00",
+    time: "19:00 - 20:59",
     price: "400 RON",
     status: "active",
     image:
@@ -66,14 +66,14 @@ const BOOKINGS_DATA = [
     venueName: "Baza Sportivă Sud",
     location: "Sector 4, București",
     sport: "Tenis",
-    icon: FaTableTennis,
+    icon: GiTennisRacket,
     color: "#A855F7",
     date: "12 Oct 2023",
-    time: "10:00 - 12:00",
+    time: "10:00 - 11:59",
     price: "120 RON",
     status: "completed",
     image:
-      "https://images.unsplash.com/photo-1518605368461-1e12d1b09b55?q=80&w=1170&auto=format&fit=crop",
+      "https://booksport.ro/_next/image?url=https%3A%2F%2Fimg.booksport.ro%2Fclubs%2F104%2Fsmall%2Fprimaverii_main_sala.jpg&w=1080&q=75",
   },
   {
     id: "B-0844",
@@ -83,11 +83,11 @@ const BOOKINGS_DATA = [
     icon: FaBasketballBall,
     color: "#F97316",
     date: "05 Oct 2023",
-    time: "18:00 - 20:00",
+    time: "18:00 - 19:59",
     price: "150 RON",
     status: "cancelled",
     image:
-      "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=1035&auto=format&fit=crop",
+      "https://sportarena.ro/wp/wp-content/uploads/2020/11/MG_3314-scaled.jpg",
   },
 ];
 

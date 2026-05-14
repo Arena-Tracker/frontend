@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Box, Flex, Text, VStack, Input, HStack, Image, Badge, Button, Grid, Icon } from "@chakra-ui/react";
+import { useNavigate } from "react-router-dom"; // Am adăugat importul pentru navigare
 import { 
   FiSearch, FiMapPin, FiStar, FiSliders, FiChevronDown, FiBell, 
   FiSquare, FiCheckSquare, FiX, FiArrowLeft, FiWind, FiBriefcase, FiSun, FiArrowRight
@@ -43,7 +44,7 @@ const LOCATIONS = [
   "BUCURESTI_SECTOR1", "BUCURESTI_SECTOR2", "BUCURESTI_SECTOR3", "BUCURESTI_SECTOR4", "BUCURESTI_SECTOR5", "BUCURESTI_SECTOR6", "BUFTEA", "CHITILA", "MAGURELE", "OTOPENI", "PANTELIMON", "POPESTI_LEORDENI", "VOLUNTARI", "BRAGADIRU"
 ];
 
-// GENERATOR DINAMIC DE ORE (Pentru a părea real, simulează ore ocupate/libere în funcție de zi)
+// GENERATOR DINAMIC DE ORE
 const generateTimeSlots = (seedIndex) => {
   return [
     { id: 1, time: "9:00 - 9:59", status: seedIndex % 3 === 0 ? "occupied" : "available" },
@@ -56,7 +57,7 @@ const generateTimeSlots = (seedIndex) => {
   ];
 };
 
-// GENERATOR DINAMIC DE ZILE (Pornind de la ziua curentă)
+// GENERATOR DINAMIC DE ZILE 
 const getDatesForOffset = (offset, count = 5) => {
   const dates = [];
   const today = new Date();
@@ -72,7 +73,7 @@ const getDatesForOffset = (offset, count = 5) => {
     const fullDateStr = d.toLocaleDateString('ro-RO', { weekday: 'long', day: 'numeric', month: 'long' });
     
     dates.push({
-      id: offset + i, // ID unic bazat pe distanța față de azi
+      id: offset + i, 
       day: dayShort.charAt(0).toUpperCase() + dayShort.slice(1),
       date: `${dayNum} ${monthShort}`,
       fullDate: fullDateStr.charAt(0).toUpperCase() + fullDateStr.slice(1),
@@ -101,47 +102,40 @@ const MODAL_DATA = {
 
 
 /**
- * @component BookingModal - Versiunea SUPREMĂ Widescreen & Calendar Nativ
+ * @component BookingModal 
  */
 const BookingModal = ({ venue, isOpen, onClose }) => {
-  // Calendar State
-  const [visibleOffset, setVisibleOffset] = useState(0); // Câte zile sărim de la ziua curentă (ex: 5 = săptămâna viitoare)
-  const [activeDateId, setActiveDateId] = useState(0);   // ID-ul zilei selectate activ
-  
-  // Selections
-  const [selectedRange, setSelectedRange] = useState([]); // Indexurile orelor selectate
+  const [visibleOffset, setVisibleOffset] = useState(0); 
+  const [activeDateId, setActiveDateId] = useState(0);   
+  const [selectedRange, setSelectedRange] = useState([]); 
   const [selectedExtras, setSelectedExtras] = useState([]);
 
-  // Resetăm stările ori de câte ori închidem/deschidem fereastra
+  useEffect(() => {
+    setSelectedRange([]);
+  }, [activeDateId, isOpen]);
+
   useEffect(() => {
     if (isOpen) {
       setVisibleOffset(0);
       setActiveDateId(0);
-      setSelectedRange([]);
       setSelectedExtras([]);
     }
   }, [isOpen]);
 
   if (!isOpen || !venue) return null;
 
-  // Generăm blocul curent de zile bazat pe vizibilitate
   const visibleDates = getDatesForOffset(visibleOffset, 5);
-  
-  // Găsim detaliile zilei selectate (sau o luăm pe prima din cele vizibile dacă nu e selectată valid)
   const activeDateObj = visibleDates.find(d => d.id === activeDateId) || visibleDates[0];
   const currentSlots = activeDateObj.slots;
 
-  // Navigare Calendar
   const handleNextDates = () => setVisibleOffset(prev => prev + 5);
   const handlePrevDates = () => setVisibleOffset(prev => Math.max(0, prev - 5));
 
-  // Schimbare Zi Active (Resetează orele la schimbarea zilei)
   const handleDateClick = (id) => {
     setActiveDateId(id);
     setSelectedRange([]);
   };
 
-  // Logica pentru Range Selection Orare
   const handleSlotClick = (idx) => {
     if (currentSlots[idx].status !== "available") return;
 
@@ -172,7 +166,6 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
     }
   };
 
-  // Extra Servicii
   const toggleExtra = (id) => {
     if (selectedExtras.includes(id)) {
       setSelectedExtras(selectedExtras.filter(e => e !== id));
@@ -181,7 +174,6 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
     }
   };
 
-  // Calcul Dinamic Total
   const extraTotal = selectedExtras.reduce((sum, extraId) => {
     const extra = MODAL_DATA.extras.find(e => e.id === extraId);
     return sum + (extra ? extra.price : 0);
@@ -191,10 +183,8 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
 
   return (
     <Box position="fixed" top={0} left={0} w="100vw" h="100vh" zIndex={9999} display="flex" alignItems="center" justifyContent="center">
-      {/* Overlay Blur */}
-      <Box position="absolute" top={0} left={0} w="full" h="full" bg="blackAlpha.800" backdropFilter="blur(15px)" onClick={onClose} />
+      <Box position="absolute" top={0} left={0} w="full" h="full" bg="blackAlpha.800" backdropFilter="blur(10px)" onClick={onClose} />
       
-      {/* Container Principal WIDESCREEN */}
       <Flex 
         direction="column" position="relative" bg={DS.colors.canvas} 
         border={{ base: "none", lg: DS.border }} borderRadius={{ base: "0", lg: "3xl" }} 
@@ -202,18 +192,24 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
         overflow="hidden" boxShadow={DS.shadow}
       >
         
-        {/* ZONA DE CONȚINUT (Scrollable) - Împărțită în 2 pe Desktop */}
-        <Flex direction={{ base: "column", lg: "row" }} flex="1" overflowY="auto" sx={{ "&::-webkit-scrollbar": { display: "none" }, scrollbarWidth: "none" }}>
+        <Flex 
+          direction={{ base: "column", lg: "row" }} flex="1" 
+          overflowY={{ base: "auto", lg: "hidden" }} 
+          sx={{ "&::-webkit-scrollbar": { display: "none" }, scrollbarWidth: "none" }}
+        >
           
-          {/* COLOANA STÂNGA (Imagine & Informații) */}
-          <Box w={{ base: "100%", lg: "40%" }} borderRight={{ base: "none", lg: DS.border }} bg="rgba(22, 24, 28, 0.3)">
-            <Box position="relative" h={{ base: "260px", lg: "350px" }} w="full" flexShrink={0}>
+          <Box 
+            w={{ base: "100%", lg: "40%" }} h={{ base: "auto", lg: "full" }} 
+            overflowY={{ base: "visible", lg: "auto" }} 
+            borderRight={{ base: "none", lg: DS.border }} bg={DS.colors.card}
+            sx={{ "&::-webkit-scrollbar": { display: "none" }, scrollbarWidth: "none" }}
+          >
+            <Box position="relative" h={{ base: "260px", lg: "320px" }} w="full" flexShrink={0}>
               <Image src={venue.image} objectFit="cover" w="full" h="full" />
-              <Box position="absolute" bottom={0} left={0} w="full" h="70%" bg="linear-gradient(to top, #0B0C0E 0%, transparent 100%)" />
+              <Box position="absolute" bottom={0} left={0} w="full" h="70%" bg="linear-gradient(to top, #16181C 0%, transparent 100%)" />
               <Flex as="button" position="absolute" top={6} left={4} boxSize="44px" bg="blackAlpha.500" backdropFilter="blur(10px)" color="white" borderRadius="full" align="center" justify="center" onClick={onClose} transition={DS.transition} _hover={{ bg: DS.colors.brand, color: "black" }}>
                 <FiArrowLeft size={22} />
               </Flex>
-              {/* Dots */}
               <Flex position="absolute" bottom={4} w="full" justify="center" gap={2}>
                 <Box boxSize="6px" bg={DS.colors.brand} borderRadius="full" /><Box boxSize="6px" bg="whiteAlpha.500" borderRadius="full" /><Box boxSize="6px" bg="whiteAlpha.500" borderRadius="full" />
               </Flex>
@@ -241,21 +237,25 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
 
               <Box display={{ base: "none", lg: "block" }}>
                 <Text fontSize="xl" fontWeight="800" color={DS.colors.text} mb={4}>Descriere și regulament</Text>
-                <Text fontSize="md" color={DS.colors.muted} lineHeight="1.7">{MODAL_DATA.description}</Text>
+                <Box bg={DS.colors.canvas} p={6} borderRadius="2xl" border="1px solid" borderColor="whiteAlpha.100">
+                  <Text fontSize="md" color={DS.colors.muted} lineHeight="1.7">{MODAL_DATA.description}</Text>
+                </Box>
               </Box>
             </VStack>
           </Box>
 
-          {/* COLOANA DREAPTA (Calendar, Ore, Extra Servicii) */}
-          <Box w={{ base: "100%", lg: "60%" }} p={{ base: 6, lg: 10 }} bg={DS.colors.canvas}>
+          <Box 
+            w={{ base: "100%", lg: "60%" }} h={{ base: "auto", lg: "full" }} 
+            overflowY={{ base: "visible", lg: "auto" }} 
+            p={{ base: 6, lg: 10 }} bg={DS.colors.canvas}
+            sx={{ "&::-webkit-scrollbar": { display: "none" }, scrollbarWidth: "none" }}
+          >
             
-            {/* CALENDAR FUNCȚIONAL CONTINUU */}
             <Box mb={10}>
               <Text fontSize="2xl" fontWeight="800" color={DS.colors.text} mb={5} letterSpacing="-0.5px">Verifică disponibilitatea</Text>
               
               <Box bg={DS.colors.card} border="1px solid" borderColor="whiteAlpha.100" borderRadius="3xl" p={{ base: 5, md: 6 }}>
                 
-                {/* Header Navigare Zile */}
                 <Flex justify="space-between" align="center" mb={6}>
                   <Flex as="button" boxSize="36px" borderRadius="full" align="center" justify="center" bg="whiteAlpha.50" _hover={{ bg: "whiteAlpha.200" }} isDisabled={visibleOffset === 0} opacity={visibleOffset === 0 ? 0.3 : 1} cursor={visibleOffset === 0 ? "not-allowed" : "pointer"} onClick={handlePrevDates} transition={DS.transition}>
                     <FiArrowLeft color={DS.colors.text} />
@@ -266,7 +266,6 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
                   </Flex>
                 </Flex>
                 
-                {/* Zilele (Horizontal List) */}
                 <Flex justify="space-between" gap={3} mb={8}>
                   {visibleDates.map((d) => {
                     const isSelected = activeDateId === d.id;
@@ -285,7 +284,6 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
                   })}
                 </Flex>
 
-                {/* Lista Ore (Slots) */}
                 <VStack align="stretch" spacing={0}>
                   {currentSlots.map((slot, idx) => {
                     const isAvailable = slot.status === "available";
@@ -322,7 +320,6 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
               </Box>
             </Box>
 
-            {/* EXTRA SERVICII */}
             <Box mb={{ base: 8, lg: 0 }}>
               <Text fontSize="2xl" fontWeight="800" color={DS.colors.text} mb={5} letterSpacing="-0.5px">Extra servicii</Text>
               <VStack align="stretch" spacing={4}>
@@ -348,7 +345,6 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
               </VStack>
             </Box>
 
-            {/* DESCRIERE (Apare doar la final pe mobil) */}
             <Box display={{ base: "block", lg: "none" }} mt={8}>
               <Text fontSize="xl" fontWeight="800" color={DS.colors.text} mb={4}>Descriere și regulament</Text>
               <Box bg={DS.colors.card} p={6} borderRadius="2xl" border="1px solid" borderColor="whiteAlpha.100">
@@ -359,7 +355,7 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
           </Box>
         </Flex>
 
-        {/* STICKY FOOTER: ABSOLUT FIXAT JOS */}
+        {/* STICKY FOOTER */}
         <Box flexShrink={0} w="full" bg="rgba(11, 12, 14, 0.98)" backdropFilter="blur(20px)" borderTop="1px solid" borderColor="whiteAlpha.100" p={{ base: 5, lg: 6 }} zIndex={10}>
           <Button 
             w="full" h="64px" bg={DS.colors.brand} color="black" borderRadius="2xl" fontSize="xl" fontWeight="900" transition={DS.transition}
@@ -416,12 +412,32 @@ const PremiumVenueCard = ({ venue, onReserve }) => (
   </Box>
 );
 
-const SectionLayout = ({ title, children }) => (
-  <Box w="full" mb={8}>
-    <Flex justify="space-between" align="flex-end" mb={2} px={{ base: 4, md: 8 }}><Text fontSize="lg" fontWeight="900" color={DS.colors.text} letterSpacing="-0.5px">{title}</Text><Text fontSize="xs" fontWeight="700" color={DS.colors.brand} cursor="pointer" _hover={{ textDecoration: "underline" }} transition="all 0.2s">Vezi toate</Text></Flex>
-    <Flex overflowX="auto" gap={4} px={{ base: 4, md: 8 }} py={4} sx={{ "&::-webkit-scrollbar": { display: "none" }, "-ms-overflow-style": "none", "scrollbar-width": "none" }}>{children}</Flex>
-  </Box>
-);
+/**
+ * @component SectionLayout (Actualizat cu Navigare corectă)
+ */
+const SectionLayout = ({ title, children, showViewAll = true, viewAllPath }) => {
+  const navigate = useNavigate();
+
+  return (
+    <Box w="full" mb={8}>
+      <Flex justify="space-between" align="flex-end" mb={2} px={{ base: 4, md: 8 }}>
+        <Text fontSize="lg" fontWeight="900" color={DS.colors.text} letterSpacing="-0.5px">{title}</Text>
+        {showViewAll && viewAllPath && (
+          <Text 
+            fontSize="xs" fontWeight="700" color={DS.colors.brand} cursor="pointer" 
+            onClick={() => navigate(viewAllPath)}
+            _hover={{ textDecoration: "underline" }} transition="all 0.2s"
+          >
+            Vezi toate
+          </Text>
+        )}
+      </Flex>
+      <Flex overflowX="auto" gap={4} px={{ base: 4, md: 8 }} py={4} sx={{ "&::-webkit-scrollbar": { display: "none" }, "-ms-overflow-style": "none", "scrollbar-width": "none" }}>
+        {children}
+      </Flex>
+    </Box>
+  );
+};
 
 const PremiumDropdown = ({ value, options, onChange, placeholder }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -502,17 +518,23 @@ const HomeContent = () => {
           {SPORT_CATEGORIES.map((sport) => <PremiumSportCard key={sport.id} sport={sport} />)}
         </SectionLayout>
 
-        <SectionLayout title="Recomandate pentru tine">
+        <SectionLayout 
+          title="Recomandate pentru tine" 
+          viewAllPath="/user/search/filter/toate?sort=recomandate" 
+        >
           {DUMMY_VENUES.map((venue) => <PremiumVenueCard key={venue.id} venue={venue} onReserve={setVenueToBook} />)}
         </SectionLayout>
 
-        <SectionLayout title="Populare în zona ta">
+        <SectionLayout 
+          title="Populare în zona ta" 
+          viewAllPath="/user/search/filter/toate?sort=populare"
+        >
           {[...DUMMY_VENUES].reverse().map((venue) => <PremiumVenueCard key={`pop-${venue.id}`} venue={venue} onReserve={setVenueToBook} />)}
         </SectionLayout>
 
       </Box>
 
-      {/* RENDER MODALUL DE REZERVARE DETALIAT ȘI RESPONSIV */}
+      {/* RENDER MODALUL DE REZERVARE */}
       <BookingModal venue={venueToBook} isOpen={!!venueToBook} onClose={() => setVenueToBook(null)} />
 
     </Box>
