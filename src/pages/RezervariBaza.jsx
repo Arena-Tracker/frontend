@@ -788,109 +788,146 @@ const RezervariBaza = () => {
   };
 
   return (
-    <Box>
-      <VStack align="start" spacing={2} mb={8}>
-        <HStack color={colors.accent}>
-          <Icon as={FiZap} boxSize={6} />
-          <Text
-            fontSize="4xl"
-            fontWeight="900"
-            color="white"
-            letterSpacing="tight"
-          >
-            Rezervările Bazei
-          </Text>
-        </HStack>
-        <Text color="gray.400" fontSize="lg">
-          Baza ta are zeci de terenuri? Găsește rezervarea instantaneu cu
-          filtrele de mai jos.
-        </Text>
-      </VStack>
-
+    <Box
+      position="relative"
+      minH="100vh"
+      bg="#0B0C0E" // Setăm același negru profund de la user
+      overflow="hidden"
+      mt={{ base: -6, md: -10 }}
+      mb={{ base: "-80px", md: -10 }}
+      mx={{ base: -4, md: -10, lg: -16 }}
+      py={{ base: 10, md: 16 }}
+      px={{ base: 4, md: 8 }}
+    >
+      {/* FUNDAL GLOW ADUS DIN BOOKINGS CONTENT */}
       <Box
-        bg="#0d1117"
-        p={5}
-        borderRadius="2xl"
-        border="1px solid"
-        borderColor="whiteAlpha.100"
-        mb={8}
-        boxShadow="xl"
-      >
-        <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr 1fr" }} gap={4}>
-          <ModernSearch
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        position="absolute"
+        top="-10%"
+        left="-10%"
+        w="50vw"
+        h="50vw"
+        bg="radial-gradient(circle, rgba(94, 209, 190, 0.08) 0%, transparent 60%)"
+        filter="blur(60px)"
+        zIndex="0"
+        pointerEvents="none"
+      />
+      <Box
+        position="absolute"
+        bottom="10%"
+        right="-10%"
+        w="60vw"
+        h="60vw"
+        bg="radial-gradient(circle, rgba(168, 85, 247, 0.06) 0%, transparent 60%)"
+        filter="blur(60px)"
+        zIndex="0"
+        pointerEvents="none"
+      />
 
-          <ProfessionalSelect
-            icon={FiActivity}
-            value={filtruStare}
-            onChange={(e) => setFiltruStare(e.target.value)}
-            options={["ACTIV", "COMPLETATA", "ANULATA"]}
-            defaultLabel="Toate Stările"
-          />
-
-          <ProfessionalSelect
-            icon={FiMapPin}
-            value={filtruTeren}
-            onChange={(e) => setFiltruTeren(e.target.value)}
-            options={terenuriDisponibile}
-            defaultLabel="Toate Terenurile"
-          />
-        </Grid>
-      </Box>
-
-      <VStack spacing={5} align="stretch">
-        <Text
-          color="gray.500"
-          fontSize="sm"
-          fontWeight="bold"
-          textTransform="uppercase"
-          pl={2}
-        >
-          Afișare {rezervariFiltrate.length} rezultate
-        </Text>
-
-        {rezervariFiltrate.length > 0 ? (
-          rezervariFiltrate.map((item) => (
-            <RezervareCard
-              key={item.idPayment}
-              data={item}
-              onCancel={anuleazaRezervare}
-            />
-          ))
-        ) : (
-          <Box
-            p={10}
-            textAlign="center"
-            bg="whiteAlpha.50"
-            borderRadius="2xl"
-            border="1px dashed"
-            borderColor="whiteAlpha.200"
-          >
-            <Icon as={FiCalendar} boxSize={10} color="gray.600" mb={4} />
-            <Text color="white" fontSize="xl" fontWeight="bold">
-              Niciun rezultat găsit
-            </Text>
-            <Text color="gray.400">
-              Nu există rezervări care să corespundă criteriilor selectate.
-            </Text>
-            <Button
-              mt={4}
-              variant="outline"
-              color={colors.accent}
-              borderColor={colors.accent}
-              onClick={() => {
-                setSearchTerm("");
-                setFiltruTeren("TOATE");
-                setFiltruStare("TOATE");
-              }}
+      {/* WRAPPER-UL DE CONȚINUT (Setăm zIndex=1 ca să fie peste glow) */}
+      <Box position="relative" zIndex={1} maxW="1200px" mx="auto">
+        <VStack align="start" spacing={2} mb={8}>
+          <HStack color={colors.accent}>
+            <Icon as={FiZap} boxSize={6} />
+            <Text
+              fontSize="4xl"
+              fontWeight="900"
+              color="white"
+              letterSpacing="tight"
             >
-              Resetează Filtrele
-            </Button>
-          </Box>
-        )}
-      </VStack>
+              Rezervările Bazei
+            </Text>
+          </HStack>
+          <Text color="gray.400" fontSize="lg">
+            Baza ta are zeci de terenuri? Găsește rezervarea instantaneu cu
+            filtrele de mai jos.
+          </Text>
+        </VStack>
+
+        <Box
+          bg="#16181C" // Setăm o culoare slightly lighter, similară cu cardurile din Bookings
+          p={5}
+          borderRadius="2xl"
+          border="1px solid"
+          borderColor="whiteAlpha.100"
+          mb={8}
+          boxShadow="0 20px 40px -15px rgba(0, 0, 0, 0.6)"
+        >
+          <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr 1fr" }} gap={4}>
+            <ModernSearch
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+
+            <ProfessionalSelect
+              icon={FiActivity}
+              value={filtruStare}
+              onChange={(e) => setFiltruStare(e.target.value)}
+              options={["ACTIV", "COMPLETATA", "ANULATA"]}
+              defaultLabel="Toate Stările"
+            />
+
+            <ProfessionalSelect
+              icon={FiMapPin}
+              value={filtruTeren}
+              onChange={(e) => setFiltruTeren(e.target.value)}
+              options={terenuriDisponibile}
+              defaultLabel="Toate Terenurile"
+            />
+          </Grid>
+        </Box>
+
+        <VStack spacing={5} align="stretch">
+          <Text
+            color="gray.500"
+            fontSize="sm"
+            fontWeight="bold"
+            textTransform="uppercase"
+            pl={2}
+          >
+            Afișare {rezervariFiltrate.length} rezultate
+          </Text>
+
+          {rezervariFiltrate.length > 0 ? (
+            rezervariFiltrate.map((item) => (
+              <RezervareCard
+                key={item.idPayment}
+                data={item}
+                onCancel={anuleazaRezervare}
+              />
+            ))
+          ) : (
+            <Box
+              p={10}
+              textAlign="center"
+              bg="whiteAlpha.50"
+              borderRadius="2xl"
+              border="1px dashed"
+              borderColor="whiteAlpha.200"
+            >
+              <Icon as={FiCalendar} boxSize={10} color="gray.600" mb={4} />
+              <Text color="white" fontSize="xl" fontWeight="bold">
+                Niciun rezultat găsit
+              </Text>
+              <Text color="gray.400">
+                Nu există rezervări care să corespundă criteriilor selectate.
+              </Text>
+              <Button
+                mt={4}
+                variant="outline"
+                color={colors.accent}
+                borderColor={colors.accent}
+                onClick={() => {
+                  setSearchTerm("");
+                  setFiltruTeren("TOATE");
+                  setFiltruStare("TOATE");
+                }}
+              >
+                Resetează Filtrele
+              </Button>
+            </Box>
+          )}
+        </VStack>
+      </Box>
     </Box>
   );
 };
