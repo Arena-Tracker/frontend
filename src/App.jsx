@@ -18,6 +18,8 @@ import BazaPage from "./pages/BazaPage";
 import HomeContent from "./pages/HomeContent";
 import SearchContent from "./pages/SearchContent";
 import TerenuriManager from "./pages/TerenuriManager";
+import HomeContent2 from "./pages/HomeContent2";
+import SearchContent2 from "./pages/SearchContent2";
 
 // Importul fișierelor de rute ale echipei
 import { RoutesAlin } from "./routes/RoutesAlin";
@@ -39,8 +41,10 @@ function App() {
         >
           <Route index element={<Navigate to="home" replace />} />
 
-          <Route path="home" element={<HomeContent />} />
-          <Route path="search" element={<SearchContent />} />
+          <Route path="home" element={<HomeContent2 />} />
+          <Route path="search" element={<SearchContent2 />} />
+          {/* <Route path="search" element={<SearchContent />} /> */}
+          {/* <Route path="home" element={<HomeContent/>} /> */}
 
           {/* Aici vin automat Bookings si Profile din fisierul lui Girip */}
           {RoutesGirip()}

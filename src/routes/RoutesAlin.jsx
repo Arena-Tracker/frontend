@@ -1,12 +1,12 @@
 import { Route } from "react-router-dom";
-import FilterContent from "../pages/FilterContent";
+import FilterContent2 from "../pages/FilterContent2";
 import { Box } from "@chakra-ui/react";
 export const RoutesAlin = () => [
   // Ruta secundară care pleacă din /user/search -> /user/search/filter/:sportType
   <Route
     key="search-filter"
     path="search/filter/:sportType"
-    element={<FilterContent />}
+    element={<FilterContent2 />}
   />,
   <Route
     key="bookings"
