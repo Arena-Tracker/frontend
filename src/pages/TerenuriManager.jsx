@@ -275,202 +275,249 @@ const TerenuriManager = () => {
   }, [terenuri, searchQuery, selectedSport]);
 
   return (
-    <Box maxW="1400px" mx="auto" position="relative">
-      {/* Sistemul Custom de Toast */}
+    <Box
+      position="relative"
+      minH="100vh"
+      bg="#0B0C0E"
+      overflow="hidden"
+      mt={{ base: -6, md: -10 }}
+      mb={{ base: "-80px", md: -10 }}
+      mx={{ base: -4, md: -10, lg: -16 }}
+      py={{ base: 10, md: 16 }}
+      px={{ base: 4, md: 8 }}
+    >
+      {/* GLOW BACKGROUND (Fundalul Premium Gradient) */}
+      <Box
+        position="absolute"
+        top="-10%"
+        left="-10%"
+        w="50vw"
+        h="50vw"
+        bg="radial-gradient(circle, rgba(94, 209, 190, 0.08) 0%, transparent 60%)"
+        filter="blur(60px)"
+        zIndex="0"
+        pointerEvents="none"
+      />
+      <Box
+        position="absolute"
+        bottom="10%"
+        right="-10%"
+        w="60vw"
+        h="60vw"
+        bg="radial-gradient(circle, rgba(168, 85, 247, 0.06) 0%, transparent 60%)"
+        filter="blur(60px)"
+        zIndex="0"
+        pointerEvents="none"
+      />
+
+      {/* Sistemul Custom de Toast (Z-Index Mare) */}
       {toast && (
         <Flex
           position="fixed"
-          bottom="24px"
-          right="24px"
-          bg={toast.status === "success" ? "#4BC0AD" : "#F59E0B"}
-          color="#16181C"
-          px={5}
-          py={3}
-          borderRadius="lg"
+          top="4"
+          right="4"
+          bg={toast.status === "success" ? "#5ED1BE" : "#FF5F5F"}
+          color="black"
+          px={6}
+          py={4}
+          borderRadius="xl"
           boxShadow="xl"
           zIndex={9999}
           alignItems="center"
           gap={3}
-          animation="fadeIn 0.3s"
+          animation="fade-in 0.3s ease-out"
         >
           <Icon
             as={toast.status === "success" ? FiCheckCircle : FiAlertCircle}
             boxSize={5}
           />
-          <Text fontWeight="bold">{toast.message}</Text>
+          <Text fontWeight="800">{toast.message}</Text>
         </Flex>
       )}
 
-      {/* Header & Buton Adăugare */}
-      <Flex
-        justifyContent="space-between"
-        alignItems="center"
-        mb={8}
-        flexWrap="wrap"
-        gap={4}
-      >
-        <Box>
-          <Text
-            fontSize={{ base: "2xl", md: "3xl" }}
-            fontWeight="700"
-            color={colors.textMain}
-          >
-            Terenurile mele
-          </Text>
-          <Text color="gray.400" fontSize="md">
-            Gestionează terenurile și disponibilitatea lor.
-          </Text>
-        </Box>
-        <Button
-          leftIcon={<FiPlus />}
-          bg={colors.accent}
-          color="#16181C"
-          fontWeight="bold"
-          _hover={{ bg: "#4BC0AD" }}
-          onClick={openAddModal}
-        >
-          Creează Teren Nou
-        </Button>
-      </Flex>
-
-      {/* Bara Căutare și Filtre */}
-      <Flex
-        direction={{ base: "column", lg: "row" }}
-        gap={4}
-        mb={12}
-        bg={colors.bgCard}
-        p={4}
-        borderRadius="2xl"
-        alignItems="center"
-      >
+      {/* WRAPPER PRINCIPAL - PUS PESTE GRADIENT (zIndex = 1) */}
+      <Box position="relative" zIndex={1} maxW="1400px" mx="auto">
+        {/* Header & Buton Adăugare */}
         <Flex
-          align="center"
-          bg={colors.bgMain}
-          borderRadius="xl"
-          px={4}
-          h="48px"
-          w={{ base: "100%", lg: "400px" }}
-          border="1px solid transparent"
-          _focusWithin={{ borderColor: colors.accent }}
+          justifyContent="space-between"
+          alignItems="center"
+          mb={8}
+          flexWrap="wrap"
+          gap={4}
         >
-          <Icon as={FiSearch} color="gray.400" boxSize={5} mr={3} />
-          <Input
-            placeholder="Caută după nume..."
-            border="none"
-            bg="transparent"
-            color={colors.textMain}
-            px={0}
-            _focus={{ outline: "none", boxShadow: "none" }}
-            _focusVisible={{ outline: "none" }}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </Flex>
-
-        <HStack
-          overflowX="auto"
-          w="100%"
-          spacing={3}
-          pb={{ base: 2, lg: 0 }}
-          css={{ "&::-webkit-scrollbar": { display: "none" } }}
-        >
-          {availableSports.map((sport) => (
-            <Button
-              key={sport}
-              onClick={() => setSelectedSport(sport)}
-              bg={selectedSport === sport ? colors.accent : "transparent"}
-              color={selectedSport === sport ? "#16181C" : "gray.400"}
-              border={
-                selectedSport === sport
-                  ? "none"
-                  : `1px solid rgba(255,255,255,0.1)`
-              }
-              borderRadius="full"
-              px={6}
-              h="40px"
-              fontWeight="600"
-              _hover={{
-                bg: selectedSport === sport ? "#4BC0AD" : "whiteAlpha.100",
-              }}
-              flexShrink={0}
+          <Box>
+            <Text
+              fontSize={{ base: "3xl", md: "4xl" }}
+              fontWeight="900"
+              color={colors.textMain || "#F2F2F2"}
+              letterSpacing="-1px"
             >
-              {sport}
-            </Button>
-          ))}
-        </HStack>
-      </Flex>
-
-      {/* Grid-ul cu Terenuri */}
-      {Object.keys(groupedAndFilteredTerenuri).length === 0 ? (
-        <Flex
-          direction="column"
-          align="center"
-          justify="center"
-          py={20}
-          bg={colors.bgCard}
-          borderRadius="2xl"
-          border={`1px dashed rgba(255,255,255,0.1)`}
-        >
-          <Icon as={FiSearch} boxSize={10} color="gray.500" mb={4} />
-          <Text color={colors.textMain} fontSize="lg" fontWeight="600">
-            Nu am găsit niciun teren.
-          </Text>
+              Terenurile mele
+            </Text>
+            <Text color="gray.400" fontSize="md" fontWeight="500">
+              Gestionează terenurile și disponibilitatea lor.
+            </Text>
+          </Box>
+          <Button
+            leftIcon={<FiPlus />}
+            bg="#5ED1BE"
+            color="black"
+            fontWeight="800"
+            borderRadius="xl"
+            _hover={{
+              transform: "translateY(-2px)",
+              boxShadow: "0 10px 20px -10px #5ED1BE",
+            }}
+            transition="all 0.3s"
+            onClick={openAddModal}
+          >
+            Creează Teren Nou
+          </Button>
         </Flex>
-      ) : (
-        Object.entries(groupedAndFilteredTerenuri).map(
-          ([sport, terenuriList]) => (
-            <Box key={sport} mb={12}>
-              <Flex align="center" mb={6}>
-                <Flex
-                  bg="rgba(94, 209, 190, 0.15)"
-                  p={3}
-                  borderRadius="xl"
-                  mr={4}
-                >
-                  <Icon
-                    as={SPORT_ICONS[sport] || IoTicketOutline}
-                    boxSize={6}
-                    color={colors.accent}
-                  />
-                </Flex>
-                <Box>
-                  <Text
-                    fontSize="2xl"
-                    fontWeight="800"
-                    color={colors.textMain}
-                    letterSpacing="tight"
-                  >
-                    {sport}
-                  </Text>
-                  <Text fontSize="sm" color="gray.400">
-                    {terenuriList.length}{" "}
-                    {terenuriList.length === 1 ? "teren" : "terenuri"}
-                  </Text>
-                </Box>
-                <Box flex={1} ml={6} h="1px" bg="whiteAlpha.100" />
-              </Flex>
-              <Grid
-                templateColumns={{
-                  base: "1fr",
-                  md: "repeat(2, 1fr)",
-                  xl: "repeat(3, 1fr)",
+
+        {/* Bara Căutare și Filtre */}
+        <Flex
+          direction={{ base: "column", lg: "row" }}
+          gap={4}
+          mb={12}
+          bg="#16181C"
+          border="1px solid rgba(255, 255, 255, 0.06)"
+          p={4}
+          borderRadius="2xl"
+          alignItems="center"
+          boxShadow="0 25px 50px -12px rgba(0,0,0,0.5)"
+        >
+          <Flex
+            align="center"
+            bg="whiteAlpha.50"
+            borderRadius="xl"
+            px={4}
+            h="48px"
+            w={{ base: "100%", lg: "400px" }}
+            border="1px solid transparent"
+            transition="all 0.3s"
+            _focusWithin={{ borderColor: "#5ED1BE", bg: "whiteAlpha.100" }}
+          >
+            <Icon as={FiSearch} color="gray.400" boxSize={5} mr={3} />
+            <Input
+              placeholder="Caută după nume..."
+              border="none"
+              bg="transparent"
+              color={colors.textMain || "#F2F2F2"}
+              fontWeight="500"
+              px={0}
+              _focus={{ outline: "none", boxShadow: "none" }}
+              _focusVisible={{ outline: "none" }}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </Flex>
+
+          <HStack
+            overflowX="auto"
+            w="100%"
+            spacing={3}
+            pb={{ base: 2, lg: 0 }}
+            css={{ "&::-webkit-scrollbar": { display: "none" } }}
+          >
+            {availableSports.map((sport) => (
+              <Button
+                key={sport}
+                onClick={() => setSelectedSport(sport)}
+                bg={selectedSport === sport ? "#5ED1BE" : "transparent"}
+                color={selectedSport === sport ? "black" : "gray.400"}
+                border={
+                  selectedSport === sport
+                    ? "none"
+                    : `1px solid rgba(255,255,255,0.1)`
+                }
+                borderRadius="full"
+                px={6}
+                h="40px"
+                fontWeight="700"
+                _hover={{
+                  bg: selectedSport === sport ? "#4BC0AD" : "whiteAlpha.100",
                 }}
-                gap={6}
+                flexShrink={0}
               >
-                {terenuriList.map((teren) => (
-                  <AdminTerenCard
-                    key={teren.id}
-                    teren={teren}
-                    onToggleStatus={handleToggleStatus}
-                    onEdit={openEditModal}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </Grid>
-            </Box>
-          ),
-        )
-      )}
+                {sport}
+              </Button>
+            ))}
+          </HStack>
+        </Flex>
+
+        {/* Grid-ul cu Terenuri */}
+        {Object.keys(groupedAndFilteredTerenuri).length === 0 ? (
+          <Flex
+            direction="column"
+            align="center"
+            justify="center"
+            py={20}
+            bg="#16181C"
+            borderRadius="2xl"
+            border={`1px dashed rgba(255,255,255,0.1)`}
+          >
+            <Icon as={FiSearch} boxSize={10} color="gray.500" mb={4} />
+            <Text color={colors.textMain} fontSize="lg" fontWeight="600">
+              Nu am găsit niciun teren.
+            </Text>
+          </Flex>
+        ) : (
+          Object.entries(groupedAndFilteredTerenuri).map(
+            ([sport, terenuriList]) => (
+              <Box key={sport} mb={12}>
+                <Flex align="center" mb={6}>
+                  <Flex
+                    bg="rgba(94, 209, 190, 0.15)"
+                    p={3}
+                    borderRadius="xl"
+                    mr={4}
+                  >
+                    <Icon
+                      as={SPORT_ICONS[sport] || IoTicketOutline}
+                      boxSize={6}
+                      color="#5ED1BE"
+                    />
+                  </Flex>
+                  <Box>
+                    <Text
+                      fontSize="2xl"
+                      fontWeight="800"
+                      color={colors.textMain}
+                      letterSpacing="tight"
+                    >
+                      {sport}
+                    </Text>
+                    <Text fontSize="sm" color="gray.400" fontWeight="600">
+                      {terenuriList.length}{" "}
+                      {terenuriList.length === 1 ? "teren" : "terenuri"}
+                    </Text>
+                  </Box>
+                  <Box flex={1} ml={6} h="1px" bg="whiteAlpha.100" />
+                </Flex>
+                <Grid
+                  templateColumns={{
+                    base: "1fr",
+                    md: "repeat(2, 1fr)",
+                    xl: "repeat(3, 1fr)",
+                  }}
+                  gap={6}
+                >
+                  {terenuriList.map((teren) => (
+                    <AdminTerenCard
+                      key={teren.id}
+                      teren={teren}
+                      onToggleStatus={handleToggleStatus}
+                      onEdit={openEditModal}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </Grid>
+              </Box>
+            ),
+          )
+        )}
+      </Box>
 
       {/* MODAL CREARE (Design Deschis) */}
       <AddTerenModal
