@@ -8,6 +8,7 @@ export const RoutesAlin = () => [
     path="search/filter/:sportType"
     element={<FilterContent2 />}
   />,
+  
   <Route
     key="bookings"
     path="bookings"
