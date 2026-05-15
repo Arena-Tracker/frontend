@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Flex,
@@ -10,8 +10,9 @@ import {
   Button,
   VStack,
   Icon,
+  Spinner,
 } from "@chakra-ui/react";
-import { useNavigate } from "react-router-dom"; // Import adăugat pentru navigare
+import { useNavigate } from "react-router-dom";
 import {
   FiSearch,
   FiMapPin,
@@ -28,6 +29,15 @@ import { GiTennisRacket, GiVolleyballBall } from "react-icons/gi";
 // IMPORTĂ MODALUL
 import BookingModal from "../components/BookingModal";
 
+// ==========================================
+// CONFIGURĂRI API & MEDIU
+// ==========================================
+const COURT_API_URL =
+  import.meta.env.VITE_COURT_SERVICE_URL || "http://localhost:8082/api";
+const USERS_API_URL =
+  import.meta.env.VITE_USERS_SERVICE_URL || "http://localhost:8083/api";
+const ID_USER_CURENT = 1; // Conform cerinței, considerăm ID 1
+
 const DS = {
   colors: {
     canvas: "#0B0C0E",
@@ -42,42 +52,6 @@ const DS = {
   shadow: "0 25px 50px -12px rgba(0, 0, 0, 0.9)",
   transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
 };
-
-const DUMMY_VENUES = [
-  {
-    id: 1,
-    title: "Baza Sportivă Juventus",
-    location: "Berceni, Sector 4",
-    price: 100,
-    rating: "4.8",
-    reviews: 124,
-    image:
-      "https://images.unsplash.com/photo-1487466365202-1afdb86c764e?q=80&w=1173&auto=format&fit=crop",
-    isNew: false,
-  },
-  {
-    id: 2,
-    title: "Arena Tineretului Premium",
-    location: "Parcul Tineretului",
-    price: 150,
-    rating: "4.9",
-    reviews: 89,
-    image:
-      "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=1035&auto=format&fit=crop",
-    isNew: true,
-  },
-  {
-    id: 3,
-    title: "Complex Sportiv Sud",
-    location: "Aparatorii Patriei",
-    price: 120,
-    rating: "4.5",
-    reviews: 42,
-    image:
-      "https://images.unsplash.com/photo-1518605368461-1e12d1b09b55?q=80&w=1170&auto=format&fit=crop",
-    isNew: false,
-  },
-];
 
 const SPORT_CATEGORIES = [
   { id: 1, name: "Fotbal", icon: FaFutbol, color: "#5ED1BE" },
@@ -103,6 +77,9 @@ const LOCATIONS = [
   "BRAGADIRU",
 ];
 
+// ==========================================
+// COMPONENTE DE UI
+// ==========================================
 const PremiumSportCard = ({ sport }) => {
   const IconComponent = sport.icon;
   return (
@@ -251,7 +228,6 @@ const PremiumVenueCard = ({ venue, onReserve }) => (
   </Box>
 );
 
-// Componenta de layout actualizată cu hook-ul de navigare
 const SectionLayout = ({
   title,
   children,
@@ -259,7 +235,6 @@ const SectionLayout = ({
   viewAllPath,
 }) => {
   const navigate = useNavigate();
-
   return (
     <Box w="full" mb={8}>
       <Flex
@@ -276,7 +251,7 @@ const SectionLayout = ({
         >
           {title}
         </Text>
-        {showViewAll && viewAllPath ? (
+        {showViewAll && viewAllPath && (
           <Text
             fontSize="xs"
             fontWeight="700"
@@ -288,18 +263,7 @@ const SectionLayout = ({
           >
             Vezi toate
           </Text>
-        ) : showViewAll && !viewAllPath ? (
-          <Text
-            fontSize="xs"
-            fontWeight="700"
-            color={DS.colors.brand}
-            cursor="pointer"
-            _hover={{ textDecoration: "underline" }}
-            transition="all 0.2s"
-          >
-            Vezi toate
-          </Text>
-        ) : null}
+        )}
       </Flex>
       <Flex
         overflowX="auto"
@@ -448,16 +412,79 @@ const PremiumDropdown = ({ value, options, onChange, placeholder }) => {
   );
 };
 
+// ==========================================
+// COMPONENTA PRINCIPALĂ
+// ==========================================
 const HomeContent = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedSportFilter, setSelectedSportFilter] = useState(null);
   const [selectedLocation, setSelectedLocation] = useState("");
   const [venueToBook, setVenueToBook] = useState(null);
 
+  // Stări pentru integrare API
+  const [userName, setUserName] = useState("Client"); // Fallback
+  const [dbVenues, setDbVenues] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const formattedLocations = LOCATIONS.map((loc) => ({
     label: loc.replace(/_/g, " "),
     value: loc,
   }));
+
+  // ==========================================
+  // FETCH USER & TERENURI
+  // ==========================================
+  useEffect(() => {
+    const fetchHomeData = async () => {
+      setIsLoading(true);
+      try {
+        // 1. Fetch Nume User
+        const userRes = await fetch(`${USERS_API_URL}/users/${ID_USER_CURENT}`);
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          setUserName(userData.prenume || userData.nume || "Alexandru");
+        }
+
+        // 2. Fetch Terenuri (Apelăm search cu un DTO gol pentru a primi tot)
+        const terenuriRes = await fetch(`${COURT_API_URL}/terenuri/search`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+
+        if (terenuriRes.ok) {
+          const data = await terenuriRes.json();
+          // Mapăm structura din DB la ce are nevoie Card-ul nostru de UI
+          const mappedVenues = data.map((t) => ({
+            id: t.idTeren || t.id,
+            title: t.numeTeren,
+            location: "București", // Fallback (BazaSportivaDTO nu este populat aici implicit)
+            price: t.pretPeOra,
+            rating: "5.0", // Fallback
+            reviews: 10,
+            image:
+              "https://images.unsplash.com/photo-1487466365202-1afdb86c764e?q=80&w=1173&auto=format&fit=crop",
+            isNew: true,
+            // Păstrăm și obiectul original de la backend pentru BookingModal
+            originalData: t,
+          }));
+
+          setDbVenues(mappedVenues);
+        }
+      } catch (error) {
+        console.error("Eroare la încărcarea datelor Home:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHomeData();
+  }, []);
+
+  // Împărțim primele 3 pentru Recomandate și următoarele (dacă sunt) pentru Populare
+  const recomandate = dbVenues.slice(0, 3);
+  // În mod normal aici aplici o logică, dar conform cerinței afișăm tot primele 3 din DB
+  const populare = dbVenues.slice(0, 3);
 
   return (
     <Box
@@ -499,8 +526,9 @@ const HomeContent = () => {
           mb={8}
         >
           <Box>
+            {/* NUME PRELUAT DINAMIC */}
             <Text fontSize="sm" color={DS.colors.muted} fontWeight="700">
-              Salutare, Alexandru! 👋
+              Salutare, {userName}! 👋
             </Text>
             <Text
               fontSize="2xl"
@@ -707,7 +735,6 @@ const HomeContent = () => {
           </Box>
         </Box>
 
-        {/* SECȚIUNI ACTUALIZATE CU RUTE DE VIEW ALL */}
         <SectionLayout title="Sporturi" showViewAll={false}>
           {SPORT_CATEGORIES.map((sport) => (
             <PremiumSportCard key={sport.id} sport={sport} />
@@ -718,30 +745,46 @@ const HomeContent = () => {
           title="Recomandate pentru tine"
           viewAllPath="/user/search/filter/toate?sort=recomandate"
         >
-          {DUMMY_VENUES.map((venue) => (
-            <PremiumVenueCard
-              key={venue.id}
-              venue={venue}
-              onReserve={setVenueToBook}
-            />
-          ))}
+          {isLoading ? (
+            <Spinner color={DS.colors.brand} />
+          ) : recomandate.length > 0 ? (
+            recomandate.map((venue) => (
+              <PremiumVenueCard
+                key={venue.id}
+                venue={venue}
+                onReserve={setVenueToBook}
+              />
+            ))
+          ) : (
+            <Text color={DS.colors.muted} fontSize="sm">
+              Nu există terenuri momentan.
+            </Text>
+          )}
         </SectionLayout>
 
         <SectionLayout
           title="Populare în zona ta"
           viewAllPath="/user/search/filter/toate?sort=populare"
         >
-          {[...DUMMY_VENUES].reverse().map((venue) => (
-            <PremiumVenueCard
-              key={`pop-${venue.id}`}
-              venue={venue}
-              onReserve={setVenueToBook}
-            />
-          ))}
+          {isLoading ? (
+            <Spinner color={DS.colors.brand} />
+          ) : populare.length > 0 ? (
+            populare.map((venue) => (
+              <PremiumVenueCard
+                key={`pop-${venue.id}`}
+                venue={venue}
+                onReserve={setVenueToBook}
+              />
+            ))
+          ) : (
+            <Text color={DS.colors.muted} fontSize="sm">
+              Nu există terenuri momentan.
+            </Text>
+          )}
         </SectionLayout>
       </Box>
 
-      {/* RENDER MODAL EXTERN */}
+      {/* RENDER MODAL EXTERN (Va folosi datele mapate) */}
       <BookingModal
         venue={venueToBook}
         isOpen={!!venueToBook}
