@@ -1,20 +1,12 @@
+import React from "react";
 import { Route } from "react-router-dom";
+
+import HomeContent2 from "../pages/HomeContent2";
+import SearchContent2 from "../pages/SearchContent2";
 import FilterContent2 from "../pages/FilterContent2";
-import { Box } from "@chakra-ui/react";
+
 export const RoutesAlin = () => [
-  // Ruta secundară care pleacă din /user/search -> /user/search/filter/:sportType
-  <Route
-    key="search-filter"
-    path="search/filter/:sportType"
-    element={<FilterContent2 />}
-  />,
-  <Route
-    key="bookings"
-    path="bookings"
-    element={
-      <Box p={10} color="white">
-        Pagina Rezervări (Girip)
-      </Box>
-    }
-  />,
+  <Route key="home" path="home" element={<HomeContent2 />} />,
+  <Route key="search" path="search" element={<SearchContent2 />} />,
+  <Route key="filter" path="search/filter/:sportType" element={<FilterContent2 />} />
 ];
