@@ -83,6 +83,7 @@ const LoginPage = ({ onLogin }) => {
       </Flex>
     </Container>
   );
+  
 };
 
 export default LoginPage;
