@@ -368,14 +368,14 @@ const ProfileContent = () => {
             </Flex>
             <Text fontSize="xl" fontWeight="800" color={DS.colors.text} mb={3}>Ești absolut sigur?</Text>
             <Text fontSize="sm" color={DS.colors.muted} mb={8} lineHeight="tall">
-              Această acțiune este permanentă și ireversibilă. Toate datele tale vor fi șterse definitiv.
+              Această acțiune te va obliga sa te reconectezi.
             </Text>
             <HStack spacing={4} justify="center">
               <Button flex={1} variant="unstyled" color={DS.colors.text} bg={DS.colors.input} h="50px" borderRadius="xl" fontWeight="700" onClick={() => setIsDeleteModalOpen(false)} _hover={{ bg: "whiteAlpha.200" }}>
                 Anulează
               </Button>
               <Button flex={1} bg={DS.colors.danger} color="white" h="50px" borderRadius="xl" fontWeight="700" onClick={handleConfirmDelete} _hover={{ filter: "brightness(1.1)" }}>
-                Da, șterge
+                LOG OUT
               </Button>
             </HStack>
           </Box>
