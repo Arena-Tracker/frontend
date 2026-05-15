@@ -1,5 +1,4 @@
-// src/pages/RezervariBaza.jsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Flex,
@@ -10,6 +9,7 @@ import {
   Button,
   Icon,
   Grid,
+  Spinner,
 } from "@chakra-ui/react";
 import {
   FiCalendar,
@@ -22,7 +22,6 @@ import {
   FiMail,
   FiZap,
   FiDownloadCloud,
-  FiPrinter,
   FiCheckCircle,
   FiXCircle,
   FiActivity,
@@ -32,10 +31,19 @@ import {
 import { colors } from "./colors";
 
 // ==========================================
-// 1. HELPER PENTRU STĂRILE REZERVĂRII
+// CONFIGURĂRI DE MEDIU & API
+// ==========================================
+const PAYMENT_API_URL =
+  import.meta.env.VITE_PAYMENT_SERVICE_URL || "http://localhost:8084/api";
+const BOOKING_API_URL =
+  import.meta.env.VITE_BOOKING_SERVICE_URL || "http://localhost:8081/api";
+const ID_BAZA_CURENTA = 1;
+
+// ==========================================
+// 1. HELPERS & FORMATATOARE DE DATE
 // ==========================================
 const getStatusConfig = (stare) => {
-  switch (stare) {
+  switch (stare?.toUpperCase()) {
     case "ACTIV":
       return {
         color: "blue",
@@ -58,98 +66,56 @@ const getStatusConfig = (stare) => {
         icon: FiXCircle,
         label: "ANULATĂ",
         bg: "red.500",
-        description: "Rezervare anulată",
+        description: "Rezervare stornată",
       };
     default:
       return {
         color: "gray",
         icon: FiClock,
-        label: "NECUNOSCUT",
+        label: stare || "NECUNOSCUT",
+        bg: "gray.500",
         description: "",
       };
   }
 };
 
-// ==========================================
-// 2. DATE DE TEST (MOCK)
-// ==========================================
-const initialMockData = [
-  {
-    idPayment: "REC-2405-B99",
-    totalPlata: 120.0,
-    dataEmitere: "2024-05-19",
-    stare: "ACTIV",
-    rezervare: {
-      idRezervare: 2,
-      data: "21 Mai 2024",
-      oraStart: "10:00",
-      oraFinal: "11:30",
-    },
-    User: {
-      nume: "Ionescu",
-      prenume: "Andrei",
-      email: "andrei@yahoo.com",
-      telefon: "0744 987 654",
-      nivel: 5,
-      puncte: 1200,
-    },
-    Teren: {
-      numeTeren: "Teren Tenis #2 Zgură",
-      numarLocuri: 4,
-      pretPeOra: 80.0,
-    },
-    extraServicii: [],
-  },
-  {
-    idPayment: "REC-2405-A18",
-    totalPlata: 165.0,
-    dataEmitere: "2024-05-18",
-    stare: "COMPLETATA",
-    rezervare: {
-      idRezervare: 1,
-      data: "20 Mai 2024",
-      oraStart: "18:00",
-      oraFinal: "20:00",
-    },
-    User: {
-      nume: "Popescu",
-      prenume: "Ion",
-      email: "ion.popescu@gmail.com",
-      telefon: "0722 123 456",
-      nivel: 3,
-      puncte: 450,
-    },
-    Teren: { numeTeren: "Teren Sintetic #1", numarLocuri: 10, pretPeOra: 75.0 },
-    extraServicii: [{ nume: "Închiriere Minge Profi", pret: 15.0 }],
-  },
-  {
-    idPayment: "REC-2405-C42",
-    totalPlata: 100.0,
-    dataEmitere: "2024-05-22",
-    stare: "ANULATA",
-    rezervare: {
-      idRezervare: 3,
-      data: "25 Mai 2024",
-      oraStart: "14:00",
-      oraFinal: "15:00",
-    },
-    User: {
-      nume: "Marin",
-      prenume: "George",
-      email: "george.m@gmail.com",
-      telefon: "0788 111 222",
-      nivel: 1,
-      puncte: 50,
-    },
-    Teren: { numeTeren: "Teren Fotbal #3", numarLocuri: 12, pretPeOra: 100.0 },
-    extraServicii: [],
-  },
-];
+const formatDateToRomanian = (isoDate) => {
+  if (!isoDate) return "N/A";
+  const d = new Date(isoDate);
+  const months = [
+    "Ian",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mai",
+    "Iun",
+    "Iul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+};
+
+const formatTime = (timeStr) => {
+  if (!timeStr) return "00:00";
+  return timeStr.substring(0, 5);
+};
+
+const calculateHours = (start, end) => {
+  if (!start || !end) return 0;
+  const parseTime = (time) => time.split(":").map(Number);
+  const [startH, startM] = parseTime(start);
+  const [endH, endM] = parseTime(end);
+  const diffMinutes = endH * 60 + endM - (startH * 60 + startM);
+  return Math.round((diffMinutes / 60 + Number.EPSILON) * 100) / 100;
+};
 
 // ==========================================
-// 3. COMPONENTE UI PREMIUM (CUSTOM DROPDOWN)
+// 2. COMPONENTE UI (CUSTOM DROPDOWN, SEARCH, DATE)
 // ==========================================
-// Senior UI: Am creat un dropdown complet personalizat pentru a evita elementul nativ <select>
 const ProfessionalSelect = ({
   icon,
   value,
@@ -160,14 +126,12 @@ const ProfessionalSelect = ({
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSelect = (val) => {
-    // Simulăm un eveniment de target.value ca să menținem compatibilitatea cu state-ul tău
     onChange({ target: { value: val } });
     setIsOpen(false);
   };
 
   return (
     <Box position="relative" w="full" zIndex={isOpen ? 20 : 1}>
-      {/* Overlay invizibil pe tot ecranul ca să se închidă dropdown-ul când dai click în afara lui */}
       {isOpen && (
         <Box
           position="fixed"
@@ -179,8 +143,6 @@ const ProfessionalSelect = ({
           onClick={() => setIsOpen(false)}
         />
       )}
-
-      {/* Trigger-ul (Butonul care arată selecția curentă) */}
       <Flex
         bg="#1a202c"
         border="1px solid"
@@ -212,8 +174,6 @@ const ProfessionalSelect = ({
           transition="transform 0.2s"
         />
       </Flex>
-
-      {/* Meniul efectiv cu opțiuni */}
       {isOpen && (
         <Box
           position="absolute"
@@ -257,7 +217,6 @@ const ProfessionalSelect = ({
                 {defaultLabel}
               </Text>
             </Box>
-
             {options.map((opt) => (
               <Box
                 key={opt}
@@ -303,7 +262,7 @@ const ModernSearch = ({ value, onChange }) => (
     <Icon as={FiSearch} color={colors.accent} mr={3} />
     <Box
       as="input"
-      placeholder="Caută client, telefon sau ID factură..."
+      placeholder="Caută (Nume, Telefon, ID)..."
       value={value}
       onChange={onChange}
       bg="transparent"
@@ -317,19 +276,46 @@ const ModernSearch = ({ value, onChange }) => (
   </Flex>
 );
 
-// ==========================================
-// 4. HELPER CALCUL ORE
-// ==========================================
-const calculateHours = (start, end) => {
-  const parseTime = (time) => time.split(":").map(Number);
-  const [startH, startM] = parseTime(start);
-  const [endH, endM] = parseTime(end);
-  const diffMinutes = endH * 60 + endM - (startH * 60 + startM);
-  return Math.round((diffMinutes / 60 + Number.EPSILON) * 100) / 100;
-};
+const DateFilter = ({ value, onChange }) => (
+  <Flex
+    bg="#1a202c"
+    border="1px solid"
+    borderColor="whiteAlpha.200"
+    borderRadius="xl"
+    px={4}
+    py={2.5}
+    alignItems="center"
+    _hover={{ borderColor: "whiteAlpha.400" }}
+    transition="all 0.2s"
+    w="full"
+  >
+    <Icon as={FiCalendar} color={colors.accent} mr={3} />
+    <Box
+      as="input"
+      type="date"
+      value={value}
+      onChange={onChange}
+      bg="transparent"
+      color={value ? "white" : "gray.400"}
+      outline="none"
+      w="full"
+      fontSize="sm"
+      fontWeight="bold"
+      style={{ colorScheme: "dark" }} // FIX: Forțează browserul să deschidă un calendar nativ dark mode
+      css={{
+        "&::-webkit-calendar-picker-indicator": {
+          cursor: "pointer",
+          opacity: 0.6,
+          transition: "0.2s",
+          "&:hover": { opacity: 1 },
+        },
+      }}
+    />
+  </Flex>
+);
 
 // ==========================================
-// 5. CARD REZERVARE (DESIGN PREMIUM SPLIT-VIEW)
+// 3. CARD REZERVARE (DESIGN PREMIUM SPLIT-VIEW)
 // ==========================================
 const RezervareCard = ({ data, onCancel }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -343,8 +329,13 @@ const RezervareCard = ({ data, onCancel }) => {
   const status = getStatusConfig(data.stare);
 
   const handleCancelClick = () => {
-    onCancel(data.idPayment);
+    onCancel(data.idPayment, data.rezervare.idRezervare);
     setConfirmCancel(false);
+  };
+
+  const handleDownloadInvoice = (e) => {
+    e.stopPropagation();
+    window.open(`${PAYMENT_API_URL}/payment/${data.idPayment}/pdf`, "_blank");
   };
 
   return (
@@ -411,8 +402,8 @@ const RezervareCard = ({ data, onCancel }) => {
 
         <HStack spacing={4}>
           <Badge
-            colorPalette={status.color}
-            variant="subtle"
+            bg={status.bg}
+            color="white"
             px={3}
             py={1.5}
             borderRadius="md"
@@ -664,6 +655,7 @@ const RezervareCard = ({ data, onCancel }) => {
                     }
                     transition="all 0.2s"
                     disabled={data.stare === "ANULATA"}
+                    onClick={handleDownloadInvoice}
                   >
                     <Icon as={FiDownloadCloud} mr={2} />{" "}
                     {data.stare === "ANULATA"
@@ -749,14 +741,145 @@ const RezervareCard = ({ data, onCancel }) => {
 };
 
 // ==========================================
-// 6. PAGINA PRINCIPALĂ
+// 4. PAGINA PRINCIPALĂ & INTEGRARE API
 // ==========================================
 const RezervariBaza = () => {
-  const [rezervari, setRezervari] = useState(initialMockData);
+  const [rezervari, setRezervari] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [toastMessage, setToastMessage] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filtruStare, setFiltruStare] = useState("TOATE");
   const [filtruTeren, setFiltruTeren] = useState("TOATE");
+  const [filtruData, setFiltruData] = useState("");
+
+  const showToast = (title, description, status = "info") => {
+    setToastMessage({ title, description, status });
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  const mapPaymentResponseToUI = (item) => {
+    const rez = item.rezervare || {};
+    const usr = item.user || item.User || {};
+    const trn = item.teren || item.Teren || {};
+
+    // 1. Statusul Preluat din N+1 Fetch (realStatus din map-ul de mai jos) sau cel din obiect
+    let calcStare =
+      item.realStatus ||
+      rez.status ||
+      rez.stare ||
+      item.status ||
+      item.stare ||
+      "ACTIV";
+
+    // 2. Doar dacă nu e deja ANULATA, și data a trecut, o marcam completată
+    if (calcStare === "ACTIV" && rez.data) {
+      const resDate = new Date(rez.data);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (resDate < today) calcStare = "COMPLETATA";
+    }
+
+    return {
+      idPayment: item.idPayment,
+      totalPlata: item.totalPlata || 0,
+      dataEmitere: item.dataEmitere || "N/A",
+      stare: calcStare,
+      rezervare: {
+        idRezervare: rez.idRezervare,
+        data: formatDateToRomanian(rez.data),
+        dataRaw: rez.data || "",
+        oraStart: formatTime(rez.oraStart),
+        oraFinal: formatTime(rez.oraFinal),
+      },
+      User: {
+        nume: usr.nume || "Client",
+        prenume: usr.prenume || "Necunoscut",
+        email: usr.email || "Fără email",
+        telefon: usr.telefon || "-",
+        nivel: usr.nivel || 1,
+        puncte: usr.puncte || 0,
+      },
+      Teren: {
+        numeTeren: trn.numeTeren || "Teren Șters/Necunoscut",
+        numarLocuri: trn.numarLocuri || 0,
+        pretPeOra: trn.pretPeOra || 0,
+      },
+      extraServicii: item.extraServicii || [],
+    };
+  };
+
+  useEffect(() => {
+    const fetchRezervari = async () => {
+      setIsLoading(true);
+      try {
+        // 1. Preluăm toate plățile de pe Payment Service
+        const response = await fetch(
+          `${PAYMENT_API_URL}/payment/bazasportiva/${ID_BAZA_CURENTA}`,
+        );
+        if (!response.ok)
+          throw new Error("Eroare la preluarea plăților/facturilor");
+        const paymentsData = await response.json();
+
+        // 2. Fetch paralel (N+1) către Booking Service pentru a prelua statusul REAL al fiecărei rezervări
+        const paymentsWithRealStatus = await Promise.all(
+          paymentsData.map(async (item) => {
+            let fetchedStatus = null;
+            const idRez = item.rezervare?.idRezervare;
+
+            if (idRez) {
+              try {
+                const rezResponse = await fetch(
+                  `${BOOKING_API_URL}/rezervari/${idRez}`,
+                );
+                if (rezResponse.ok) {
+                  const rezData = await rezResponse.json();
+                  const rawStatus = rezData.status ?? rezData.stare;
+
+                  // Mapare ENUM (0 = ACTIV, 1 = COMPLETATA, 2 = ANULATA) sau STRING
+                  if (rawStatus === 0 || rawStatus === "ACTIV")
+                    fetchedStatus = "ACTIV";
+                  else if (
+                    rawStatus === 1 ||
+                    rawStatus === "COMPLETAT" ||
+                    rawStatus === "COMPLETATA"
+                  )
+                    fetchedStatus = "COMPLETATA";
+                  else if (
+                    rawStatus === 2 ||
+                    rawStatus === "ANULAT" ||
+                    rawStatus === "ANULATA"
+                  )
+                    fetchedStatus = "ANULATA";
+                }
+              } catch (err) {
+                console.warn(
+                  `Nu am putut prelua statusul pentru rezervarea ${idRez}`,
+                );
+              }
+            }
+            return { ...item, realStatus: fetchedStatus };
+          }),
+        );
+
+        const formattedData = paymentsWithRealStatus.map(
+          mapPaymentResponseToUI,
+        );
+        setRezervari(formattedData);
+      } catch (error) {
+        console.error(error);
+        showToast(
+          "Eroare rețea",
+          "Nu am putut încărca rezervările de pe server.",
+          "error",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRezervari();
+  }, []);
 
   const terenuriDisponibile = useMemo(() => {
     return [...new Set(rezervari.map((r) => r.Teren.numeTeren))];
@@ -764,34 +887,67 @@ const RezervariBaza = () => {
 
   const rezervariFiltrate = useMemo(() => {
     return rezervari.filter((r) => {
+      const numeClient = (r.User.nume || "").toLowerCase();
+      const prenumeClient = (r.User.prenume || "").toLowerCase();
+      const telefonClient = r.User.telefon || "";
+      const idFactura = (r.idPayment || "").toLowerCase();
+      const sTerm = searchTerm.toLowerCase();
+
       const matchesSearch =
         searchTerm === "" ||
-        r.User.nume.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.User.prenume.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.User.telefon.includes(searchTerm) ||
-        r.idPayment.toLowerCase().includes(searchTerm.toLowerCase());
-
+        numeClient.includes(sTerm) ||
+        prenumeClient.includes(sTerm) ||
+        telefonClient.includes(sTerm) ||
+        idFactura.includes(sTerm);
       const matchesStare = filtruStare === "TOATE" || r.stare === filtruStare;
       const matchesTeren =
         filtruTeren === "TOATE" || r.Teren.numeTeren === filtruTeren;
+      const matchesData = !filtruData || r.rezervare.dataRaw === filtruData;
 
-      return matchesSearch && matchesStare && matchesTeren;
+      return matchesSearch && matchesStare && matchesTeren && matchesData;
     });
-  }, [rezervari, searchTerm, filtruStare, filtruTeren]);
+  }, [rezervari, searchTerm, filtruStare, filtruTeren, filtruData]);
 
-  const anuleazaRezervare = (idPayment) => {
-    setRezervari((prev) =>
-      prev.map((rez) =>
-        rez.idPayment === idPayment ? { ...rez, stare: "ANULATA" } : rez,
-      ),
-    );
+  const anuleazaRezervare = async (idPayment, idRezervare) => {
+    try {
+      if (!idRezervare)
+        throw new Error("Lipsă ID Rezervare din datele primite.");
+
+      const response = await fetch(
+        `${BOOKING_API_URL}/rezervari/${idRezervare}/anulare`,
+        {
+          method: "PATCH",
+        },
+      );
+
+      if (!response.ok) throw new Error("Actualizarea pe server a eșuat.");
+
+      // Actualizăm starea vizuală
+      setRezervari((prev) =>
+        prev.map((rez) =>
+          rez.idPayment === idPayment ? { ...rez, stare: "ANULATA" } : rez,
+        ),
+      );
+      showToast(
+        "Rezervare Anulată",
+        `Factura ${idPayment} a fost marcată ca stornată.`,
+        "info",
+      );
+    } catch (error) {
+      console.error(error);
+      showToast(
+        "Eroare Anulare",
+        "Nu am putut anula rezervarea pe server.",
+        "error",
+      );
+    }
   };
 
   return (
     <Box
       position="relative"
       minH="100vh"
-      bg="#0B0C0E" // Setăm același negru profund de la user
+      bg="#0B0C0E"
       overflow="hidden"
       mt={{ base: -6, md: -10 }}
       mb={{ base: "-80px", md: -10 }}
@@ -799,7 +955,47 @@ const RezervariBaza = () => {
       py={{ base: 10, md: 16 }}
       px={{ base: 4, md: 8 }}
     >
-      {/* FUNDAL GLOW ADUS DIN BOOKINGS CONTENT */}
+      {toastMessage && (
+        <Flex
+          position="fixed"
+          top="4"
+          right="4"
+          bg={
+            toastMessage.status === "error"
+              ? "#FF5F5F"
+              : toastMessage.status === "info"
+                ? "#3B82F6"
+                : "#5ED1BE"
+          }
+          color={
+            toastMessage.status === "error" || toastMessage.status === "info"
+              ? "white"
+              : "black"
+          }
+          px={6}
+          py={4}
+          borderRadius="xl"
+          boxShadow="xl"
+          zIndex={9999}
+          alignItems="center"
+          gap={4}
+          animation="fade-in 0.3s ease-out"
+        >
+          <Icon
+            as={toastMessage.status === "error" ? FiXCircle : FiCheckCircle}
+            boxSize={6}
+          />
+          <Box>
+            <Text fontWeight="900" fontSize="sm">
+              {toastMessage.title}
+            </Text>
+            <Text fontSize="xs" fontWeight="600">
+              {toastMessage.description}
+            </Text>
+          </Box>
+        </Flex>
+      )}
+
       <Box
         position="absolute"
         top="-10%"
@@ -823,7 +1019,6 @@ const RezervariBaza = () => {
         pointerEvents="none"
       />
 
-      {/* WRAPPER-UL DE CONȚINUT (Setăm zIndex=1 ca să fie peste glow) */}
       <Box position="relative" zIndex={1} maxW="1200px" mx="auto">
         <VStack align="start" spacing={2} mb={8}>
           <HStack color={colors.accent}>
@@ -844,7 +1039,7 @@ const RezervariBaza = () => {
         </VStack>
 
         <Box
-          bg="#16181C" // Setăm o culoare slightly lighter, similară cu cardurile din Bookings
+          bg="#16181C"
           p={5}
           borderRadius="2xl"
           border="1px solid"
@@ -852,12 +1047,18 @@ const RezervariBaza = () => {
           mb={8}
           boxShadow="0 20px 40px -15px rgba(0, 0, 0, 0.6)"
         >
-          <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr 1fr" }} gap={4}>
+          <Grid
+            templateColumns={{
+              base: "1fr",
+              md: "repeat(2, 1fr)",
+              lg: "2fr 1fr 1fr 1fr",
+            }}
+            gap={4}
+          >
             <ModernSearch
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-
             <ProfessionalSelect
               icon={FiActivity}
               value={filtruStare}
@@ -865,13 +1066,16 @@ const RezervariBaza = () => {
               options={["ACTIV", "COMPLETATA", "ANULATA"]}
               defaultLabel="Toate Stările"
             />
-
             <ProfessionalSelect
               icon={FiMapPin}
               value={filtruTeren}
               onChange={(e) => setFiltruTeren(e.target.value)}
               options={terenuriDisponibile}
               defaultLabel="Toate Terenurile"
+            />
+            <DateFilter
+              value={filtruData}
+              onChange={(e) => setFiltruData(e.target.value)}
             />
           </Grid>
         </Box>
@@ -887,7 +1091,11 @@ const RezervariBaza = () => {
             Afișare {rezervariFiltrate.length} rezultate
           </Text>
 
-          {rezervariFiltrate.length > 0 ? (
+          {isLoading ? (
+            <Flex justify="center" align="center" py={20}>
+              <Spinner color={colors.accent} size="xl" thickness="4px" />
+            </Flex>
+          ) : rezervariFiltrate.length > 0 ? (
             rezervariFiltrate.map((item) => (
               <RezervareCard
                 key={item.idPayment}
@@ -920,6 +1128,7 @@ const RezervariBaza = () => {
                   setSearchTerm("");
                   setFiltruTeren("TOATE");
                   setFiltruStare("TOATE");
+                  setFiltruData("");
                 }}
               >
                 Resetează Filtrele
