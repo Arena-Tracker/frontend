@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Flex,
@@ -10,8 +10,10 @@ import {
   Button,
   VStack,
   Icon,
+  Spinner,
+  Grid,
 } from "@chakra-ui/react";
-import { useNavigate } from "react-router-dom"; // Import adăugat pentru navigare
+import { useNavigate } from "react-router-dom";
 import {
   FiSearch,
   FiMapPin,
@@ -21,12 +23,30 @@ import {
   FiBell,
   FiSquare,
   FiCheckSquare,
+  FiArrowLeft,
+  FiArrowRight,
+  FiWind,
+  FiBriefcase,
+  FiSun,
+  FiClock,
+  FiCalendar,
+  FiDollarSign,
+  FiCheckCircle,
+  FiXCircle,
 } from "react-icons/fi";
-import { FaFutbol, FaBasketballBall } from "react-icons/fa";
+import { FaFutbol, FaBasketballBall, FaParking } from "react-icons/fa";
 import { GiTennisRacket, GiVolleyballBall } from "react-icons/gi";
 
-// IMPORTĂ MODALUL
-import BookingModal from "../components/BookingModal";
+// ==========================================
+// CONFIGURĂRI API & MEDIU
+// ==========================================
+const COURT_API_URL =
+  import.meta.env.VITE_COURT_SERVICE_URL || "http://localhost:8082/api";
+const USERS_API_URL =
+  import.meta.env.VITE_USERS_SERVICE_URL || "http://localhost:8083/api";
+const BOOKING_API_URL =
+  import.meta.env.VITE_BOOKING_SERVICE_URL || "http://localhost:8081/api";
+const ID_USER_CURENT = 1;
 
 const DS = {
   colors: {
@@ -42,42 +62,6 @@ const DS = {
   shadow: "0 25px 50px -12px rgba(0, 0, 0, 0.9)",
   transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
 };
-
-const DUMMY_VENUES = [
-  {
-    id: 1,
-    title: "Baza Sportivă Juventus",
-    location: "Berceni, Sector 4",
-    price: 100,
-    rating: "4.8",
-    reviews: 124,
-    image:
-      "https://images.unsplash.com/photo-1487466365202-1afdb86c764e?q=80&w=1173&auto=format&fit=crop",
-    isNew: false,
-  },
-  {
-    id: 2,
-    title: "Arena Tineretului Premium",
-    location: "Parcul Tineretului",
-    price: 150,
-    rating: "4.9",
-    reviews: 89,
-    image:
-      "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=1035&auto=format&fit=crop",
-    isNew: true,
-  },
-  {
-    id: 3,
-    title: "Complex Sportiv Sud",
-    location: "Aparatorii Patriei",
-    price: 120,
-    rating: "4.5",
-    reviews: 42,
-    image:
-      "https://images.unsplash.com/photo-1518605368461-1e12d1b09b55?q=80&w=1170&auto=format&fit=crop",
-    isNew: false,
-  },
-];
 
 const SPORT_CATEGORIES = [
   { id: 1, name: "Fotbal", icon: FaFutbol, color: "#5ED1BE" },
@@ -103,6 +87,964 @@ const LOCATIONS = [
   "BRAGADIRU",
 ];
 
+const MODAL_DATA = {
+  facilities: [
+    { name: "Dușuri", icon: FiWind, color: "#3B82F6" },
+    { name: "Vestiar", icon: FiBriefcase, color: "#D97706" },
+    { name: "Parcare", icon: FaParking, color: "#10B981" },
+    { name: "Nocturnă", icon: FiSun, color: "#EAB308" },
+  ],
+};
+
+// ==========================================
+// FUNCȚII CALENDAR
+// ==========================================
+const getDatesForOffset = (offset, count = 5) => {
+  const dates = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (let i = 0; i < count; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + offset + i);
+
+    const dayShort = d.toLocaleDateString("ro-RO", { weekday: "short" });
+    const dayNum = d.getDate();
+    const monthShort = d.toLocaleDateString("ro-RO", { month: "short" });
+    const fullDateStr = d.toLocaleDateString("ro-RO", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    });
+
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+
+    dates.push({
+      id: offset + i,
+      day: dayShort.charAt(0).toUpperCase() + dayShort.slice(1),
+      dayNum: dayNum,
+      monthShort: monthShort,
+      date: `${dayNum} ${monthShort}`,
+      fullDate: fullDateStr.charAt(0).toUpperCase() + fullDateStr.slice(1),
+      rawDate: `${yyyy}-${mm}-${dd}`,
+    });
+  }
+  return dates;
+};
+
+// ==========================================
+// COMPONENTA MODAL REZERVARE
+// ==========================================
+const BookingModal = ({ venue, isOpen, onClose, showGlobalToast }) => {
+  const [step, setStep] = useState(1);
+  const [visibleOffset, setVisibleOffset] = useState(0);
+  const [activeDateId, setActiveDateId] = useState(0);
+
+  const [currentSlots, setCurrentSlots] = useState([]);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [selectedRange, setSelectedRange] = useState([]);
+  const [selectedExtras, setSelectedExtras] = useState([]);
+
+  // Extragem serviciile extra DIN BACKEND (din terenul selectat)
+  const dynamicExtras = useMemo(() => {
+    if (!venue?.originalData?.servicii) return [];
+    return venue.originalData.servicii.map((srv, idx) => ({
+      id: srv.id || idx + 1, // Fallback la index+1 daca nu exista ID in ExtraServiciuDTO
+      name: srv.nume || srv.denumire,
+      price: srv.pret || 0,
+    }));
+  }, [venue]);
+
+  const visibleDates = useMemo(
+    () => getDatesForOffset(visibleOffset, 5),
+    [visibleOffset],
+  );
+  const activeDateObj = useMemo(
+    () => visibleDates.find((d) => d.id === activeDateId) || visibleDates[0],
+    [visibleDates, activeDateId],
+  );
+
+  useEffect(() => {
+    if (isOpen) {
+      setStep(1);
+      setVisibleOffset(0);
+      setActiveDateId(0);
+      setSelectedRange([]);
+      setSelectedExtras([]);
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    const fetchIntervals = async () => {
+      if (!isOpen || !venue) return;
+
+      setIsLoadingSlots(true);
+      setSelectedRange([]);
+
+      try {
+        const response = await fetch(
+          `${BOOKING_API_URL}/rezervari/teren/${venue.id}/intervale?data=${activeDateObj.rawDate}`,
+        );
+        let availableFromApi = [];
+        if (response.ok) {
+          availableFromApi = await response.json();
+        }
+
+        const allSlots = [];
+        for (let h = 8; h <= 22; h++) {
+          const startH = String(h).padStart(2, "0");
+          const endH = String(h).padStart(2, "0");
+          const timeString = `${startH}:00 - ${endH}:59`;
+
+          const isAvailable = availableFromApi.some((apiSlot) => {
+            const apiStart = apiSlot.OraStart || apiSlot.oraStart;
+            return apiStart && apiStart.startsWith(`${startH}:00`);
+          });
+
+          allSlots.push({
+            id: h,
+            time: timeString,
+            status: isAvailable ? "available" : "occupied",
+          });
+        }
+
+        setCurrentSlots(allSlots);
+      } catch (error) {
+        const fallback = [];
+        for (let h = 8; h <= 22; h++)
+          fallback.push({
+            id: h,
+            time: `${String(h).padStart(2, "0")}:00 - ${String(h).padStart(2, "0")}:59`,
+            status: "occupied",
+          });
+        setCurrentSlots(fallback);
+      } finally {
+        setIsLoadingSlots(false);
+      }
+    };
+
+    fetchIntervals();
+  }, [activeDateId, isOpen, venue, activeDateObj.rawDate]);
+
+  if (!isOpen || !venue) return null;
+
+  const handleNextDates = () => setVisibleOffset((prev) => prev + 5);
+  const handlePrevDates = () =>
+    setVisibleOffset((prev) => Math.max(0, prev - 5));
+
+  const handleSlotClick = (idx) => {
+    if (currentSlots[idx].status !== "available") return;
+
+    if (selectedRange.length === 0 || selectedRange.length > 1) {
+      setSelectedRange([idx]);
+    } else {
+      const min = Math.min(selectedRange[0], idx);
+      const max = Math.max(selectedRange[0], idx);
+      let isValidRange = true;
+      const newRange = [];
+      for (let i = min; i <= max; i++) {
+        if (currentSlots[i].status !== "available") {
+          isValidRange = false;
+          break;
+        }
+        newRange.push(i);
+      }
+      setSelectedRange(isValidRange ? newRange : [idx]);
+    }
+  };
+
+  const toggleExtra = (id) => {
+    setSelectedExtras((prev) =>
+      prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id],
+    );
+  };
+
+  const extraTotal = selectedExtras.reduce(
+    (sum, id) => sum + (dynamicExtras.find((e) => e.id === id)?.price || 0),
+    0,
+  );
+  const timeSlotPrice = selectedRange.length * (parseInt(venue.price) || 0);
+  const finalTotal = timeSlotPrice + extraTotal;
+
+  const getSelectedTimeString = () => {
+    if (selectedRange.length === 0) return "";
+    const minIdx = Math.min(...selectedRange);
+    const maxIdx = Math.max(...selectedRange);
+    const startTime = currentSlots[minIdx].time.split(" - ")[0];
+    const endTime = currentSlots[maxIdx].time.split(" - ")[1];
+    return `${startTime} - ${endTime}`;
+  };
+
+  const handleConfirmBooking = async () => {
+    setIsSubmitting(true);
+    try {
+      const minIdx = Math.min(...selectedRange);
+      const maxIdx = Math.max(...selectedRange);
+      const oraStart = currentSlots[minIdx].time.split(" - ")[0];
+      const oraFinal = currentSlots[maxIdx].time.split(" - ")[1];
+
+      const requestBody = {
+        data: activeDateObj.rawDate,
+        oraStart: `${oraStart}:00`,
+        oraFinal: `${oraFinal}:00`,
+        idTeren: venue.id,
+        userId: ID_USER_CURENT,
+        idsExtraServicii: selectedExtras,
+      };
+
+      const response = await fetch(`${BOOKING_API_URL}/rezervari`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) throw new Error("Eroare la crearea rezervării");
+
+      // ÎNCHIDEM MODALUL INSTANT ȘI AFIȘĂM TOAST-UL GLOBAL
+      onClose();
+      showGlobalToast(
+        "Rezervare finalizată!",
+        "Factura și detaliile au fost salvate cu succes.",
+        "success",
+      );
+    } catch (error) {
+      console.error(error);
+      showGlobalToast(
+        "Eroare",
+        "Nu am putut finaliza rezervarea. Încearcă din nou.",
+        "error",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const renderStep1 = () => (
+    <Flex
+      direction={{ base: "column", lg: "row" }}
+      flex="1"
+      overflowY={{ base: "auto", lg: "hidden" }}
+      sx={{ "&::-webkit-scrollbar": { display: "none" } }}
+    >
+      <Box
+        w={{ base: "100%", lg: "40%" }}
+        flexShrink={0}
+        bg={DS.colors.card}
+        borderRight={{ base: "none", lg: DS.border }}
+        position="relative"
+      >
+        <Box position="relative" h={{ base: "250px", lg: "350px" }} w="full">
+          <Image src={venue.image} objectFit="cover" w="full" h="full" />
+          <Box
+            position="absolute"
+            inset={0}
+            bg="linear-gradient(to top, #16181C 0%, transparent 80%)"
+          />
+          <Flex
+            as="button"
+            position="absolute"
+            top={6}
+            left={6}
+            boxSize="44px"
+            bg="blackAlpha.500"
+            backdropFilter="blur(10px)"
+            color="white"
+            borderRadius="full"
+            align="center"
+            justify="center"
+            onClick={onClose}
+            transition={DS.transition}
+            _hover={{ bg: DS.colors.brand, color: "black" }}
+          >
+            <FiArrowLeft size={22} />
+          </Flex>
+        </Box>
+
+        <VStack
+          align="stretch"
+          px={{ base: 6, lg: 10 }}
+          pb={{ base: 6, lg: 10 }}
+          mt={{ base: "-40px", lg: "-80px" }}
+          position="relative"
+          zIndex={2}
+          spacing={0}
+        >
+          <Box mb={6}>
+            <Text
+              fontSize={{ base: "3xl", lg: "4xl" }}
+              fontWeight="900"
+              color={DS.colors.text}
+              lineHeight="1.1"
+              letterSpacing="-1px"
+            >
+              {venue.title}
+            </Text>
+            <Flex align="center" gap={2} color={DS.colors.muted} mt={2}>
+              <FiMapPin size={16} />
+              <Text fontSize="md" fontWeight="600">
+                {venue.location}
+              </Text>
+            </Flex>
+          </Box>
+
+          <Box p={5} borderRadius="2xl" border={DS.border} bg="transparent">
+            <Flex justify="space-between" align="center">
+              {MODAL_DATA.facilities.map((fac, idx) => (
+                <VStack key={idx} spacing={3}>
+                  <Flex
+                    boxSize={{ base: "48px", lg: "56px" }}
+                    bg="#22252A"
+                    borderRadius="full"
+                    align="center"
+                    justify="center"
+                    color={fac.color}
+                  >
+                    <Icon as={fac.icon} boxSize={{ base: 5, lg: 6 }} />
+                  </Flex>
+                  <Text
+                    fontSize={{ base: "9px", lg: "11px" }}
+                    fontWeight="800"
+                    color="white"
+                    textTransform="uppercase"
+                  >
+                    {fac.name}
+                  </Text>
+                </VStack>
+              ))}
+            </Flex>
+          </Box>
+        </VStack>
+      </Box>
+
+      <Box
+        w={{ base: "100%", lg: "60%" }}
+        p={{ base: 6, lg: 10 }}
+        pb={{ base: 32, lg: 24 }}
+        bg={DS.colors.canvas}
+        overflowY={{ base: "visible", lg: "auto" }}
+        sx={{ "&::-webkit-scrollbar": { display: "none" } }}
+      >
+        <Box mb={10}>
+          <Text
+            fontSize={{ base: "xl", lg: "2xl" }}
+            fontWeight="800"
+            color={DS.colors.text}
+            mb={5}
+            letterSpacing="-0.5px"
+          >
+            Verifică disponibilitatea
+          </Text>
+          <Box
+            bg={DS.colors.card}
+            border="1px solid"
+            borderColor="whiteAlpha.100"
+            borderRadius="3xl"
+            p={{ base: 4, md: 6 }}
+          >
+            <Flex justify="space-between" align="center" mb={6}>
+              <Flex
+                as="button"
+                boxSize="36px"
+                borderRadius="full"
+                align="center"
+                justify="center"
+                bg="whiteAlpha.50"
+                _hover={{ bg: "whiteAlpha.200" }}
+                isDisabled={visibleOffset === 0}
+                opacity={visibleOffset === 0 ? 0.3 : 1}
+                cursor={visibleOffset === 0 ? "not-allowed" : "pointer"}
+                onClick={handlePrevDates}
+                transition={DS.transition}
+              >
+                <FiArrowLeft color={DS.colors.text} />
+              </Flex>
+              <Text fontSize="lg" fontWeight="800" color={DS.colors.text}>
+                {activeDateObj.fullDate}
+              </Text>
+              <Flex
+                as="button"
+                boxSize="36px"
+                borderRadius="full"
+                align="center"
+                justify="center"
+                bg="whiteAlpha.50"
+                _hover={{ bg: "whiteAlpha.200" }}
+                cursor="pointer"
+                onClick={handleNextDates}
+                transition={DS.transition}
+              >
+                <FiArrowRight color={DS.colors.text} />
+              </Flex>
+            </Flex>
+
+            <Flex justify="space-between" gap={2} mb={8}>
+              {visibleDates.map((d) => {
+                const isSelected = activeDateId === d.id;
+                return (
+                  <VStack
+                    key={d.id}
+                    spacing={1}
+                    flex={1}
+                    py={3}
+                    cursor="pointer"
+                    bg={isSelected ? "rgba(94, 209, 190, 0.08)" : "transparent"}
+                    border="1px solid"
+                    borderColor={
+                      isSelected ? DS.colors.brand : "whiteAlpha.100"
+                    }
+                    borderRadius="xl"
+                    transition={DS.transition}
+                    onClick={() => setActiveDateId(d.id)}
+                    _hover={{
+                      borderColor: isSelected
+                        ? DS.colors.brand
+                        : "whiteAlpha.300",
+                    }}
+                  >
+                    <Text
+                      fontSize={{ base: "10px", md: "xs" }}
+                      fontWeight="700"
+                      color={isSelected ? DS.colors.brand : DS.colors.muted}
+                    >
+                      {d.day}
+                    </Text>
+                    <Text
+                      fontSize={{ base: "sm", md: "md" }}
+                      fontWeight="900"
+                      color={isSelected ? DS.colors.brand : DS.colors.text}
+                    >
+                      {d.dayNum}
+                      <Box
+                        as="span"
+                        display={{ base: "none", sm: "inline" }}
+                        ml={1}
+                      >
+                        {d.monthShort}
+                      </Box>
+                    </Text>
+                  </VStack>
+                );
+              })}
+            </Flex>
+
+            {isLoadingSlots ? (
+              <Flex justify="center" align="center" py={10}>
+                <Spinner color={DS.colors.brand} size="lg" />
+              </Flex>
+            ) : (
+              <VStack align="stretch" spacing={0}>
+                {currentSlots.map((slot, idx) => {
+                  const isAvailable = slot.status === "available";
+                  const isSelected = selectedRange.includes(idx);
+                  return (
+                    <Flex
+                      key={slot.id}
+                      justify="space-between"
+                      align="center"
+                      py={4}
+                      borderBottom={
+                        idx !== currentSlots.length - 1 ? "1px solid" : "none"
+                      }
+                      borderColor="whiteAlpha.50"
+                      cursor={isAvailable ? "pointer" : "not-allowed"}
+                      opacity={isAvailable ? 1 : 0.4}
+                      onClick={() => handleSlotClick(idx)}
+                      _hover={
+                        isAvailable
+                          ? {
+                              bg: "whiteAlpha.50",
+                              px: 4,
+                              mx: -4,
+                              borderRadius: "lg",
+                            }
+                          : {}
+                      }
+                      transition="all 0.2s"
+                    >
+                      <Text
+                        fontSize={{ base: "sm", md: "lg" }}
+                        fontWeight="800"
+                        color={DS.colors.text}
+                        w={{ base: "90px", md: "120px" }}
+                      >
+                        {slot.time}
+                      </Text>
+                      <Flex align="center" gap={{ base: 2, md: 3 }} flex={1}>
+                        <Box
+                          boxSize={{ base: "6px", md: "8px" }}
+                          bg={isAvailable ? DS.colors.brand : DS.colors.danger}
+                          borderRadius="full"
+                        />
+                        <Text
+                          fontSize={{ base: "xs", md: "sm" }}
+                          fontWeight="700"
+                          color={DS.colors.text}
+                        >
+                          {isAvailable ? "Disponibil" : "Ocupat"}
+                        </Text>
+                      </Flex>
+                      <Flex
+                        align="center"
+                        justify="flex-end"
+                        gap={{ base: 2, md: 4 }}
+                        w={{ base: "90px", md: "120px" }}
+                      >
+                        <Text
+                          fontSize={{ base: "sm", md: "lg" }}
+                          fontWeight="800"
+                          color={
+                            isAvailable ? DS.colors.brand : DS.colors.muted
+                          }
+                        >
+                          {venue.price}RON
+                        </Text>
+                        {isAvailable && (
+                          <Box
+                            color={
+                              isSelected ? DS.colors.brand : DS.colors.muted
+                            }
+                            transition={DS.transition}
+                          >
+                            {isSelected ? (
+                              <FiCheckSquare size={20} />
+                            ) : (
+                              <FiSquare size={20} />
+                            )}
+                          </Box>
+                        )}
+                      </Flex>
+                    </Flex>
+                  );
+                })}
+              </VStack>
+            )}
+          </Box>
+        </Box>
+
+        <Box>
+          <Text
+            fontSize={{ base: "xl", lg: "2xl" }}
+            fontWeight="800"
+            color={DS.colors.text}
+            mb={5}
+            letterSpacing="-0.5px"
+          >
+            Extra servicii
+          </Text>
+          <VStack align="stretch" spacing={4}>
+            {dynamicExtras.length > 0 ? (
+              dynamicExtras.map((extra) => {
+                const isSelected = selectedExtras.includes(extra.id);
+                return (
+                  <Flex
+                    key={extra.id}
+                    justify="space-between"
+                    align="center"
+                    bg={DS.colors.card}
+                    border="1px solid"
+                    borderColor={
+                      isSelected ? DS.colors.brand : "whiteAlpha.100"
+                    }
+                    borderRadius="2xl"
+                    p={5}
+                    cursor="pointer"
+                    transition={DS.transition}
+                    onClick={() => toggleExtra(extra.id)}
+                    _hover={{ borderColor: DS.colors.brand }}
+                  >
+                    <Text fontSize="md" fontWeight="700" color={DS.colors.text}>
+                      {extra.name}
+                    </Text>
+                    <Flex align="center" gap={5}>
+                      <Text
+                        fontSize="lg"
+                        fontWeight="800"
+                        color={DS.colors.brand}
+                      >
+                        {extra.price}RON
+                      </Text>
+                      <Box
+                        color={isSelected ? DS.colors.brand : DS.colors.muted}
+                      >
+                        {isSelected ? (
+                          <FiCheckSquare size={22} />
+                        ) : (
+                          <FiSquare size={22} />
+                        )}
+                      </Box>
+                    </Flex>
+                  </Flex>
+                );
+              })
+            ) : (
+              <Text color={DS.colors.muted} fontSize="sm">
+                Acest teren nu dispune de servicii extra momentan.
+              </Text>
+            )}
+          </VStack>
+        </Box>
+      </Box>
+
+      <Box
+        position="absolute"
+        bottom={0}
+        left={0}
+        w="full"
+        bg="rgba(11, 12, 14, 0.95)"
+        backdropFilter="blur(20px)"
+        borderTop={DS.border}
+        p={{ base: 4, md: 5 }}
+        zIndex={10}
+      >
+        <Flex
+          justify="space-between"
+          align="center"
+          maxW={{ base: "100%", lg: "1150px" }}
+          mx="auto"
+        >
+          <VStack
+            align="start"
+            spacing={0}
+            display={{ base: "none", md: "flex" }}
+          >
+            <Text
+              fontSize="xs"
+              color={DS.colors.muted}
+              fontWeight="700"
+              letterSpacing="1px"
+              textTransform="uppercase"
+            >
+              Total estimativ
+            </Text>
+            <Text fontSize="2xl" color={DS.colors.text} fontWeight="900">
+              {finalTotal} RON
+            </Text>
+          </VStack>
+          <Button
+            w={{ base: "full", md: "auto" }}
+            minW="250px"
+            h={{ base: "50px", md: "54px" }}
+            bg={DS.colors.brand}
+            color="black"
+            borderRadius="xl"
+            fontSize="lg"
+            fontWeight="900"
+            transition={DS.transition}
+            isDisabled={selectedRange.length === 0}
+            pointerEvents={selectedRange.length === 0 ? "none" : "auto"}
+            opacity={selectedRange.length === 0 ? 0.5 : 1}
+            onClick={() => {
+              if (selectedRange.length === 0) return;
+              setStep(2);
+            }}
+            rightIcon={<FiArrowRight />}
+          >
+            {selectedRange.length === 0 ? "Selectează ora" : "Continuă"}
+          </Button>
+        </Flex>
+      </Box>
+    </Flex>
+  );
+
+  const renderStep2 = () => (
+    <Box
+      flex="1"
+      bg={DS.colors.canvas}
+      overflowY="auto"
+      position="relative"
+      sx={{ "&::-webkit-scrollbar": { display: "none" } }}
+    >
+      <Flex
+        p={6}
+        align="center"
+        gap={4}
+        borderBottom={DS.border}
+        bg={DS.colors.card}
+      >
+        <Flex
+          as="button"
+          boxSize="40px"
+          bg="whiteAlpha.100"
+          borderRadius="full"
+          align="center"
+          justify="center"
+          onClick={() => setStep(1)}
+          _hover={{ bg: "whiteAlpha.200" }}
+          transition={DS.transition}
+        >
+          <FiArrowLeft color="white" />
+        </Flex>
+        <Text fontSize="xl" fontWeight="800" color="white">
+          Confirmă rezervarea
+        </Text>
+      </Flex>
+
+      <Box maxW="500px" mx="auto" p={6} pb={24}>
+        <Box position="relative" borderRadius="3xl" mb={6}>
+          <Box
+            position="absolute"
+            inset={0}
+            bg={DS.colors.brand}
+            filter="blur(20px)"
+            opacity={0.15}
+            borderRadius="3xl"
+            zIndex={0}
+          />
+          <Flex
+            position="relative"
+            zIndex={1}
+            bg={DS.colors.card}
+            border={DS.border}
+            p={5}
+            borderRadius="3xl"
+            gap={4}
+          >
+            <Image
+              src={venue.image}
+              boxSize="80px"
+              borderRadius="xl"
+              objectFit="cover"
+            />
+            <VStack align="start" spacing={1} flex={1}>
+              <Text
+                fontSize="md"
+                fontWeight="800"
+                color="white"
+                lineHeight="1.2"
+                mb={1}
+              >
+                {venue.title}
+              </Text>
+              <Flex align="center" color={DS.colors.muted}>
+                <Icon as={FiCalendar} mr={1.5} size={14} />
+                <Text fontSize="sm" fontWeight="600">
+                  {activeDateObj.date}
+                </Text>
+              </Flex>
+              <Flex align="center" color={DS.colors.muted}>
+                <Icon as={FiClock} mr={1.5} size={14} />
+                <Text fontSize="sm" fontWeight="600">
+                  {getSelectedTimeString()}
+                </Text>
+              </Flex>
+              <Flex
+                justify="space-between"
+                w="full"
+                mt={2}
+                pt={2}
+                borderTop="1px solid"
+                borderColor="whiteAlpha.100"
+              >
+                <Text fontSize="xs" color="yellow.400" fontWeight="800">
+                  ★ {venue.rating}
+                </Text>
+                <Text fontSize="xs" color={DS.colors.brand} fontWeight="800">
+                  {timeSlotPrice} RON / {selectedRange.length}h
+                </Text>
+              </Flex>
+            </VStack>
+          </Flex>
+        </Box>
+
+        {selectedExtras.length > 0 && (
+          <Box
+            bg={DS.colors.card}
+            border={DS.border}
+            borderRadius="2xl"
+            p={5}
+            mb={6}
+          >
+            <Text fontSize="md" fontWeight="800" color="white" mb={4}>
+              Echipament & Servicii
+            </Text>
+            <VStack align="stretch" spacing={4}>
+              {selectedExtras.map((id) => {
+                const ex = dynamicExtras.find((e) => e.id === id);
+                return (
+                  <Flex key={id} justify="space-between" align="center">
+                    <Flex align="center" gap={3}>
+                      <Icon as={FiBriefcase} color={DS.colors.muted} />
+                      <Text
+                        color={DS.colors.muted}
+                        fontSize="sm"
+                        fontWeight="600"
+                      >
+                        {ex.name}
+                      </Text>
+                    </Flex>
+                    <Text color="white" fontSize="sm" fontWeight="700">
+                      {ex.price} RON
+                    </Text>
+                  </Flex>
+                );
+              })}
+            </VStack>
+          </Box>
+        )}
+
+        <Box
+          bg={DS.colors.card}
+          border={DS.border}
+          borderRadius="2xl"
+          p={5}
+          mb={6}
+        >
+          <Text fontSize="md" fontWeight="800" color="white" mb={4}>
+            Metoda de Plată
+          </Text>
+          <Flex
+            direction="column"
+            gap={1}
+            p={4}
+            borderRadius="xl"
+            border="1px solid"
+            bg="rgba(94, 209, 190, 0.05)"
+            borderColor="whiteAlpha.100"
+          >
+            <Flex align="flex-start" gap={4}>
+              <Flex
+                boxSize="36px"
+                bg="rgba(94, 209, 190, 0.15)"
+                borderRadius="full"
+                align="center"
+                justify="center"
+                color={DS.colors.brand}
+                flexShrink={0}
+              >
+                <Icon as={FiDollarSign} size={18} />
+              </Flex>
+              <Box>
+                <Text color="white" fontWeight="800" fontSize="sm" mb={1}>
+                  Plată NUMERAR la locație
+                </Text>
+                <Text fontSize="xs" color={DS.colors.muted} lineHeight="1.5">
+                  Plata se va efectua exclusiv numerar înainte de intrarea pe
+                  teren. Nu există opțiune de plată cu cardul online.
+                </Text>
+              </Box>
+            </Flex>
+          </Flex>
+        </Box>
+
+        <Box
+          bg={DS.colors.card}
+          border={DS.border}
+          borderRadius="2xl"
+          p={5}
+          mb={6}
+        >
+          <Text fontSize="md" fontWeight="800" color="white" mb={4}>
+            Rezumat Rezervare
+          </Text>
+          <VStack align="stretch" spacing={3} mb={4}>
+            <Flex justify="space-between">
+              <Text color={DS.colors.muted} fontSize="sm">
+                Teren ({selectedRange.length}h)
+              </Text>
+              <Text color="white" fontSize="sm" fontWeight="700">
+                {timeSlotPrice} RON
+              </Text>
+            </Flex>
+            {extraTotal > 0 && (
+              <Flex justify="space-between">
+                <Text color={DS.colors.muted} fontSize="sm">
+                  Echipament & Servicii
+                </Text>
+                <Text color="white" fontSize="sm" fontWeight="700">
+                  {extraTotal} RON
+                </Text>
+              </Flex>
+            )}
+          </VStack>
+          <Box borderTop="1px dashed" borderColor="whiteAlpha.200" pt={4}>
+            <Flex justify="space-between" align="center">
+              <Text color="white" fontSize="xl" fontWeight="900">
+                Total:
+              </Text>
+              <Text color={DS.colors.brand} fontSize="2xl" fontWeight="900">
+                {finalTotal} RON
+              </Text>
+            </Flex>
+          </Box>
+        </Box>
+
+        <VStack spacing={4}>
+          <Button
+            w="full"
+            h="64px"
+            bg={DS.colors.brand}
+            color="black"
+            borderRadius="xl"
+            fontSize="xl"
+            fontWeight="900"
+            isLoading={isSubmitting}
+            loadingText="Se procesează..."
+            onClick={handleConfirmBooking}
+            _hover={{
+              transform: "translateY(-2px)",
+              boxShadow: `0 10px 25px -10px ${DS.colors.brand}`,
+            }}
+            transition={DS.transition}
+          >
+            CONFIRMĂ REZERVAREA
+          </Button>
+        </VStack>
+      </Box>
+    </Box>
+  );
+
+  return (
+    <Box
+      position="fixed"
+      top={0}
+      left={0}
+      w="100vw"
+      h="100vh"
+      zIndex={9999}
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+    >
+      <Box
+        position="absolute"
+        top={0}
+        left={0}
+        w="full"
+        h="full"
+        bg="blackAlpha.800"
+        backdropFilter="blur(15px)"
+        onClick={onClose}
+      />
+      <Flex
+        direction="column"
+        position="relative"
+        bg={DS.colors.canvas}
+        border={{ base: "none", lg: DS.border }}
+        borderRadius={{ base: "0", lg: "3xl" }}
+        w={{ base: "100%", lg: step === 1 ? "1150px" : "600px" }}
+        h={{ base: "100vh", lg: "88vh" }}
+        overflow="hidden"
+        boxShadow={DS.shadow}
+        transition="width 0.4s cubic-bezier(0.4, 0, 0.2, 1)"
+      >
+        {step === 1 ? renderStep1() : renderStep2()}
+      </Flex>
+    </Box>
+  );
+};
+
+// ==========================================
+// COMPONENTE SECUNDARE
+// ==========================================
 const PremiumSportCard = ({ sport }) => {
   const IconComponent = sport.icon;
   return (
@@ -251,7 +1193,6 @@ const PremiumVenueCard = ({ venue, onReserve }) => (
   </Box>
 );
 
-// Componenta de layout actualizată cu hook-ul de navigare
 const SectionLayout = ({
   title,
   children,
@@ -259,7 +1200,6 @@ const SectionLayout = ({
   viewAllPath,
 }) => {
   const navigate = useNavigate();
-
   return (
     <Box w="full" mb={8}>
       <Flex
@@ -276,7 +1216,7 @@ const SectionLayout = ({
         >
           {title}
         </Text>
-        {showViewAll && viewAllPath ? (
+        {showViewAll && viewAllPath && (
           <Text
             fontSize="xs"
             fontWeight="700"
@@ -288,18 +1228,7 @@ const SectionLayout = ({
           >
             Vezi toate
           </Text>
-        ) : showViewAll && !viewAllPath ? (
-          <Text
-            fontSize="xs"
-            fontWeight="700"
-            color={DS.colors.brand}
-            cursor="pointer"
-            _hover={{ textDecoration: "underline" }}
-            transition="all 0.2s"
-          >
-            Vezi toate
-          </Text>
-        ) : null}
+        )}
       </Flex>
       <Flex
         overflowX="auto"
@@ -448,16 +1377,76 @@ const PremiumDropdown = ({ value, options, onChange, placeholder }) => {
   );
 };
 
+// ==========================================
+// COMPONENTA PRINCIPALĂ
+// ==========================================
 const HomeContent = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedSportFilter, setSelectedSportFilter] = useState(null);
   const [selectedLocation, setSelectedLocation] = useState("");
   const [venueToBook, setVenueToBook] = useState(null);
 
+  // Stări pentru integrare API & Global Toast
+  const [userName, setUserName] = useState("Client");
+  const [dbVenues, setDbVenues] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [toastMessage, setToastMessage] = useState(null);
+
   const formattedLocations = LOCATIONS.map((loc) => ({
     label: loc.replace(/_/g, " "),
     value: loc,
   }));
+
+  const showGlobalToast = (title, description, status = "success") => {
+    setToastMessage({ title, description, status });
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  useEffect(() => {
+    const fetchHomeData = async () => {
+      setIsLoading(true);
+      try {
+        const userRes = await fetch(`${USERS_API_URL}/users/${ID_USER_CURENT}`);
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          setUserName(userData.prenume || userData.nume || "Alexandru");
+        }
+
+        const terenuriRes = await fetch(`${COURT_API_URL}/terenuri/search`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+
+        if (terenuriRes.ok) {
+          const data = await terenuriRes.json();
+          const mappedVenues = data.map((t) => ({
+            id: t.idTeren || t.id,
+            title: t.numeTeren,
+            location: "București",
+            price: t.pretPeOra,
+            rating: "5.0",
+            reviews: 10,
+            image:
+              "https://images.unsplash.com/photo-1487466365202-1afdb86c764e?q=80&w=1173&auto=format&fit=crop",
+            isNew: true,
+            originalData: t,
+          }));
+
+          setDbVenues(mappedVenues);
+        }
+      } catch (error) {
+        console.error("Eroare la încărcarea datelor Home:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHomeData();
+  }, []);
+
+  const recomandate = dbVenues.slice(0, 3);
+  const populare = dbVenues.slice(0, 3);
 
   return (
     <Box
@@ -470,6 +1459,38 @@ const HomeContent = () => {
       mx={{ base: -4, md: -10, lg: -16 }}
       py={{ base: 10, md: 16 }}
     >
+      {/* GLOBAL TOAST NOTIFICATION */}
+      {toastMessage && (
+        <Flex
+          position="fixed"
+          top="4"
+          right="4"
+          bg={toastMessage.status === "error" ? "#FF5F5F" : "#5ED1BE"}
+          color={toastMessage.status === "error" ? "white" : "black"}
+          px={6}
+          py={4}
+          borderRadius="xl"
+          boxShadow="xl"
+          zIndex={10000}
+          alignItems="center"
+          gap={4}
+          animation="fade-in 0.3s ease-out"
+        >
+          <Icon
+            as={toastMessage.status === "error" ? FiXCircle : FiCheckCircle}
+            boxSize={6}
+          />
+          <Box>
+            <Text fontWeight="900" fontSize="sm">
+              {toastMessage.title}
+            </Text>
+            <Text fontSize="xs" fontWeight="600">
+              {toastMessage.description}
+            </Text>
+          </Box>
+        </Flex>
+      )}
+
       <Box
         position="absolute"
         top="-10%"
@@ -500,7 +1521,7 @@ const HomeContent = () => {
         >
           <Box>
             <Text fontSize="sm" color={DS.colors.muted} fontWeight="700">
-              Salutare, Alexandru! 👋
+              Salutare, {userName}! 👋
             </Text>
             <Text
               fontSize="2xl"
@@ -707,7 +1728,6 @@ const HomeContent = () => {
           </Box>
         </Box>
 
-        {/* SECȚIUNI ACTUALIZATE CU RUTE DE VIEW ALL */}
         <SectionLayout title="Sporturi" showViewAll={false}>
           {SPORT_CATEGORIES.map((sport) => (
             <PremiumSportCard key={sport.id} sport={sport} />
@@ -718,34 +1738,51 @@ const HomeContent = () => {
           title="Recomandate pentru tine"
           viewAllPath="/user/search/filter/toate?sort=recomandate"
         >
-          {DUMMY_VENUES.map((venue) => (
-            <PremiumVenueCard
-              key={venue.id}
-              venue={venue}
-              onReserve={setVenueToBook}
-            />
-          ))}
+          {isLoading ? (
+            <Spinner color={DS.colors.brand} />
+          ) : recomandate.length > 0 ? (
+            recomandate.map((venue) => (
+              <PremiumVenueCard
+                key={venue.id}
+                venue={venue}
+                onReserve={setVenueToBook}
+              />
+            ))
+          ) : (
+            <Text color={DS.colors.muted} fontSize="sm">
+              Nu există terenuri momentan.
+            </Text>
+          )}
         </SectionLayout>
 
         <SectionLayout
           title="Populare în zona ta"
           viewAllPath="/user/search/filter/toate?sort=populare"
         >
-          {[...DUMMY_VENUES].reverse().map((venue) => (
-            <PremiumVenueCard
-              key={`pop-${venue.id}`}
-              venue={venue}
-              onReserve={setVenueToBook}
-            />
-          ))}
+          {isLoading ? (
+            <Spinner color={DS.colors.brand} />
+          ) : populare.length > 0 ? (
+            populare.map((venue) => (
+              <PremiumVenueCard
+                key={`pop-${venue.id}`}
+                venue={venue}
+                onReserve={setVenueToBook}
+              />
+            ))
+          ) : (
+            <Text color={DS.colors.muted} fontSize="sm">
+              Nu există terenuri momentan.
+            </Text>
+          )}
         </SectionLayout>
       </Box>
 
-      {/* RENDER MODAL EXTERN */}
+      {/* MODAL EXTERN CU FUNCTIE DE TOAST */}
       <BookingModal
         venue={venueToBook}
         isOpen={!!venueToBook}
         onClose={() => setVenueToBook(null)}
+        showGlobalToast={showGlobalToast}
       />
     </Box>
   );

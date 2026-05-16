@@ -7,9 +7,8 @@ import {
   HStack,
   Button,
   Grid,
-  Input,
-  Textarea,
   Icon,
+  Spinner,
 } from "@chakra-ui/react";
 import {
   FiSave,
@@ -31,8 +30,12 @@ import {
 import { useNavigate } from "react-router-dom";
 
 // ==========================================
-// 1. DESIGN SYSTEM & DATE
+// CONFIGURĂRI API & DESIGN SYSTEM
 // ==========================================
+const API_URL =
+  import.meta.env.VITE_COURT_SERVICE_URL || "http://localhost:8082/api";
+const ID_BAZA_CURENTA = 1;
+
 const DS = {
   canvas: "#0B0C0E",
   card: "#16181C",
@@ -45,6 +48,7 @@ const DS = {
   transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
 };
 
+// LISTA ACTUALIZATĂ PERFECT PENTRU BACKEND-UL TĂU
 const ORAS_ENUM = [
   "BUCURESTI_SECTOR1",
   "BUCURESTI_SECTOR2",
@@ -52,13 +56,16 @@ const ORAS_ENUM = [
   "BUCURESTI_SECTOR4",
   "BUCURESTI_SECTOR5",
   "BUCURESTI_SECTOR6",
-  "ILFOV_OTOPENI",
-  "ILFOV_VOLUNTARI",
-  "CLUJ_NAPOCA",
-  "TIMISOARA",
+  "BUFTEA",
+  "CHITILA",
+  "MAGURELE",
+  "OTOPENI",
+  "PANTELIMON",
+  "POPESTI_LEORDENI",
+  "VOLUNTARI",
+  "BRAGADIRU",
 ];
 
-// FIX 1: Generăm TOATE orele zilei (00:00 - 23:30) pentru a suporta închiderea târzie
 const generateTimeOptions = () => {
   const times = [];
   for (let h = 0; h <= 23; h++) {
@@ -71,7 +78,7 @@ const generateTimeOptions = () => {
 const TIME_OPTIONS = generateTimeOptions();
 
 // ==========================================
-// 2. COMPONENTE CUSTOM DE EDITARE
+// COMPONENTE CUSTOM DE EDITARE
 // ==========================================
 
 const CustomDropdown = ({ value, options, onChange }) => {
@@ -97,8 +104,9 @@ const CustomDropdown = ({ value, options, onChange }) => {
         cursor="pointer"
         onClick={() => setIsOpen(!isOpen)}
       >
+        {/* UI Afișează valoarea fără _ (ex: BUCURESTI SECTOR1) */}
         <Text flex="1" color={DS.text} fontSize="sm" fontWeight="600">
-          {value.replace(/_/g, " ")}
+          {value ? value.replace(/_/g, " ") : ""}
         </Text>
         <Icon
           as={FiChevronDown}
@@ -107,7 +115,6 @@ const CustomDropdown = ({ value, options, onChange }) => {
           transition={DS.transition}
         />
       </Flex>
-
       {isOpen && (
         <Box
           position="absolute"
@@ -142,6 +149,7 @@ const CustomDropdown = ({ value, options, onChange }) => {
                 cursor="pointer"
                 bg={value === opt ? "whiteAlpha.100" : "transparent"}
                 _hover={{ bg: "whiteAlpha.200", color: DS.brand }}
+                // Aici trimitem la onChange varianta brută din Backend (ex: BUCURESTI_SECTOR1)
                 onClick={() => {
                   onChange(opt);
                   setIsOpen(false);
@@ -149,6 +157,7 @@ const CustomDropdown = ({ value, options, onChange }) => {
                 borderBottom="1px solid"
                 borderColor="whiteAlpha.50"
               >
+                {/* Opțiunile din listă se afișează tot frumos */}
                 <Text
                   color={value === opt ? DS.brand : DS.text}
                   fontSize="sm"
@@ -176,8 +185,12 @@ const EditableField = ({
   placeholder,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
+  const [draft, setDraft] = useState(value || "");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setDraft(value || "");
+  }, [value]);
 
   const handleConfirm = () => {
     const errorMsg = onSave(name, draft);
@@ -190,9 +203,17 @@ const EditableField = ({
   };
 
   const handleCancel = () => {
-    setDraft(value);
+    setDraft(value || "");
     setError("");
     setIsEditing(false);
+  };
+
+  const handleInputChange = (e) => {
+    let val = e.target.value;
+    if (type === "tel") {
+      val = val.replace(/[^\d+]/g, "");
+    }
+    setDraft(val);
   };
 
   return (
@@ -215,7 +236,6 @@ const EditableField = ({
           </Text>
         )}
       </Flex>
-
       <Flex
         bg={isEditing ? "whiteAlpha.100" : DS.input}
         border={DS.border}
@@ -237,7 +257,6 @@ const EditableField = ({
           mr={3}
           mt={type === "textarea" ? 1 : 0}
         />
-
         <Box flex="1" mr={4}>
           {!isEditing ? (
             <Text
@@ -246,7 +265,11 @@ const EditableField = ({
               fontWeight="600"
               opacity={value ? 1 : 0.5}
             >
-              {value ? value.replace(/_/g, " ") : placeholder}
+              {value
+                ? type === "select"
+                  ? value.replace(/_/g, " ")
+                  : value
+                : placeholder}
             </Text>
           ) : type === "select" ? (
             <CustomDropdown
@@ -258,7 +281,7 @@ const EditableField = ({
             <Box
               as="textarea"
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={handleInputChange}
               placeholder={placeholder}
               w="full"
               minH="100px"
@@ -272,9 +295,9 @@ const EditableField = ({
           ) : (
             <Box
               as="input"
-              type={type}
+              type={type === "tel" ? "text" : type}
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={handleInputChange}
               placeholder={placeholder}
               w="full"
               bg="transparent"
@@ -285,7 +308,6 @@ const EditableField = ({
             />
           )}
         </Box>
-
         {!isEditing ? (
           <Flex
             boxSize="32px"
@@ -337,23 +359,23 @@ const EditableField = ({
 };
 
 // ==========================================
-// 3. PAGINA PRINCIPALĂ
+// PAGINA PRINCIPALĂ
 // ==========================================
 const ProfilBaza = () => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [notification, setNotification] = useState(null);
 
   const [formData, setFormData] = useState({
-    idBazaSportiva: 1,
-    oras: "CLUJ_NAPOCA",
-    adresa: "Strada Sportului Nr 10",
-    descriere:
-      "Bază sportivă premium cu facilități nocturne și vestiare încălzite.",
-    telefon: "+40733111222",
-    email: "contact@arenapremium.ro",
-    programStart: "06:00",
-    programFinal: "02:00", // Acum merge perfect acest program
+    idBazaSportiva: ID_BAZA_CURENTA,
+    oras: "",
+    adresa: "",
+    descriere: "",
+    telefon: "",
+    email: "",
+    programStart: "",
+    programFinal: "",
   });
 
   const showNotification = (message, type = "success") => {
@@ -361,12 +383,62 @@ const ProfilBaza = () => {
     setTimeout(() => setNotification(null), 4000);
   };
 
-  // FIX 2: Validare smart. Permitem ture de noapte, interzicem doar programul identic.
-  const handleFieldSave = (name, draftValue) => {
-    let tempStart =
-      name === "programStart" ? draftValue : formData.programStart;
-    let tempEnd = name === "programFinal" ? draftValue : formData.programFinal;
+  // --- 1. GET DATE DE LA BACKEND ---
+  useEffect(() => {
+    const fetchProfil = async () => {
+      try {
+        const response = await fetch(
+          `${API_URL}/baze-sportive/${ID_BAZA_CURENTA}`,
+        );
+        if (!response.ok)
+          throw new Error("Nu s-au putut prelua datele bazei sportive.");
+        const data = await response.json();
 
+        setFormData({
+          idBazaSportiva: data.idBazaSportiva || ID_BAZA_CURENTA,
+          oras: data.oras || "BUCURESTI_SECTOR1", // Fallback default
+          adresa: data.adresa || "",
+          descriere: data.descriere || "",
+          telefon: data.telefon || "",
+          email: data.email || "",
+          programStart: data.programStart
+            ? data.programStart.substring(0, 5)
+            : "08:00",
+          programFinal: data.programFinal
+            ? data.programFinal.substring(0, 5)
+            : "22:00",
+        });
+      } catch (error) {
+        console.error(error);
+        showNotification("Eroare la încărcarea profilului.", "error");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProfil();
+  }, []);
+
+  // --- 2. VALIDĂRI STRICTE FRONTEND ---
+  const handleFieldSave = (name, draftValue) => {
+    const value = draftValue.trim();
+
+    if (!value && name !== "descriere") {
+      return "Acest câmp este obligatoriu!";
+    }
+
+    if (name === "telefon") {
+      const phoneRegex = /^\+?[0-9]{10,13}$/;
+      if (!phoneRegex.test(value))
+        return "Format invalid (ex: +407... sau 07...).";
+    }
+
+    if (name === "email") {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(value)) return "Adresa de email nu este validă.";
+    }
+
+    let tempStart = name === "programStart" ? value : formData.programStart;
+    let tempEnd = name === "programFinal" ? value : formData.programFinal;
     if (
       (name === "programStart" || name === "programFinal") &&
       tempStart === tempEnd
@@ -374,18 +446,57 @@ const ProfilBaza = () => {
       return "Programul nu poate fi de 0 ore!";
     }
 
-    setFormData((prev) => ({ ...prev, [name]: draftValue }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     return null;
   };
 
+  // --- 3. PUT ACTUALIZARE LA BACKEND ---
   const handleGlobalSave = async () => {
     setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      showNotification(
-        "Datele bazei au fost publicate cu succes pe platformă!",
+    try {
+      if (
+        !formData.telefon ||
+        !formData.email ||
+        !formData.adresa ||
+        !formData.oras
+      ) {
+        throw new Error("Te rugăm să completezi toate câmpurile obligatorii.");
+      }
+
+      const requestBody = {
+        oras: formData.oras, // Trimite fix "BUCURESTI_SECTOR1"
+        adresa: formData.adresa,
+        descriere: formData.descriere,
+        telefon: formData.telefon,
+        email: formData.email,
+        programStart:
+          formData.programStart.length === 5
+            ? `${formData.programStart}:00`
+            : formData.programStart,
+        programFinal:
+          formData.programFinal.length === 5
+            ? `${formData.programFinal}:00`
+            : formData.programFinal,
+      };
+
+      const response = await fetch(
+        `${API_URL}/baze-sportive/${ID_BAZA_CURENTA}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        },
       );
-    }, 1000);
+
+      if (!response.ok) throw new Error("Eroare la actualizarea profilului.");
+
+      showNotification("Datele bazei au fost actualizate cu succes pe server!");
+    } catch (error) {
+      console.error(error);
+      showNotification(error.message || "Eroare la salvarea datelor.", "error");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleLogout = () => {
@@ -393,6 +504,14 @@ const ProfilBaza = () => {
     showNotification("Te-ai deconectat cu succes.", "info");
     setTimeout(() => navigate("/login"), 1000);
   };
+
+  if (isLoading) {
+    return (
+      <Flex minH="100vh" bg={DS.canvas} justify="center" align="center">
+        <Spinner color={DS.brand} size="xl" thickness="4px" />
+      </Flex>
+    );
+  }
 
   return (
     <Box
@@ -474,10 +593,10 @@ const ProfilBaza = () => {
               </Text>
             </HStack>
             <Text fontSize="md" color={DS.muted} fontWeight="500">
-              Apasă pe iconița de editare pentru a modifica datele afacerii.
+              Apasă pe iconița de editare pentru a modifica datele bazei
+              sportive.
             </Text>
           </VStack>
-
           <Button
             variant="ghost"
             color={DS.muted}
@@ -512,14 +631,13 @@ const ProfilBaza = () => {
             </Flex>
             <Box>
               <Text fontSize="xl" fontWeight="900" color={DS.text}>
-                Identitate Afacere
+                Identitate Bază Sportivă
               </Text>
               <Text fontSize="sm" color={DS.muted}>
                 ID Bază: #{formData.idBazaSportiva}
               </Text>
             </Box>
           </Flex>
-
           <Box w="full" h="1px" bg="whiteAlpha.100" mb={8} />
 
           <VStack spacing={8} align="stretch">
@@ -563,7 +681,7 @@ const ProfilBaza = () => {
                   name="email"
                   value={formData.email}
                   onSave={handleFieldSave}
-                  placeholder="ex: contact@baza.ro"
+                  placeholder="contact@baza.ro"
                 />
                 <EditableField
                   label="Telefon"
@@ -571,6 +689,7 @@ const ProfilBaza = () => {
                   name="telefon"
                   value={formData.telefon}
                   onSave={handleFieldSave}
+                  type="tel"
                   placeholder="+407..."
                 />
               </Grid>
@@ -607,7 +726,7 @@ const ProfilBaza = () => {
                 value={formData.descriere}
                 onSave={handleFieldSave}
                 type="textarea"
-                placeholder="Descrie facilitățile, avantajele și regulile..."
+                placeholder="Descrie facilitățile..."
               />
             </Box>
           </VStack>
