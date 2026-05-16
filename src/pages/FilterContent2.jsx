@@ -12,6 +12,7 @@ import {
   Spinner,
   Icon,
 } from "@chakra-ui/react";
+
 import { useParams, useLocation } from "react-router-dom";
 import {
   FiMapPin,

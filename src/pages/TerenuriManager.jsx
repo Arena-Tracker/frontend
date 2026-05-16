@@ -22,6 +22,7 @@ import {
   FiAlertCircle,
   FiLayers,
 } from "react-icons/fi";
+import { getCurrentUser } from "../utils/auth";
 import { IoTicketOutline } from "react-icons/io5";
 import { FaFutbol, FaBasketballBall } from "react-icons/fa";
 import { GiTennisRacket, GiVolleyballBall } from "react-icons/gi";
@@ -35,7 +36,6 @@ import EditTerenModal from "../components/EditTerenModal";
 // ==========================================
 const API_URL =
   import.meta.env.VITE_COURT_SERVICE_URL || "http://localhost:8082/api";
-const ID_BAZA_CURENTA = 1;
 
 const SPORT_MAP = {
   1: "Fotbal",
@@ -256,7 +256,8 @@ const TerenuriManager = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSport, setSelectedSport] = useState("Toate");
   const [toast, setToast] = useState(null);
-
+  const currentUser = getCurrentUser();
+  const DYNAMIC_ID = currentUser ? currentUser.id : 1;
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [terenToEdit, setTerenToEdit] = useState(null);
@@ -271,12 +272,8 @@ const TerenuriManager = () => {
     setIsLoading(true);
     try {
       const [resActive, resInactive] = await Promise.all([
-        fetch(
-          `${API_URL}/terenuri/baza-sportiva/${ID_BAZA_CURENTA}?isActive=true`,
-        ),
-        fetch(
-          `${API_URL}/terenuri/baza-sportiva/${ID_BAZA_CURENTA}?isActive=false`,
-        ),
+        fetch(`${API_URL}/terenuri/baza-sportiva/${DYNAMIC_ID}?isActive=true`),
+        fetch(`${API_URL}/terenuri/baza-sportiva/${DYNAMIC_ID}?isActive=false`),
       ]);
 
       if (!resActive.ok || !resInactive.ok)
@@ -382,13 +379,13 @@ const TerenuriManager = () => {
         numeTeren: formData.numeTeren,
         numarLocuri: Number(formData.numarLocuri),
         pretPeOra: Number(formData.pretPeOra),
-        idBazaSportiva: ID_BAZA_CURENTA,
+        idBazaSportiva: DYNAMIC_ID,
         idSport: REVERSE_SPORT_MAP[formData.sport] || 1,
         servicii: formData.servicii || [],
       };
 
       const response = await fetch(
-        `${API_URL}/terenuri/baza-sportiva/${ID_BAZA_CURENTA}`,
+        `${API_URL}/terenuri/baza-sportiva/${DYNAMIC_ID}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -426,7 +423,7 @@ const TerenuriManager = () => {
         numeTeren: formData.numeTeren,
         numarLocuri: Number(formData.numarLocuri),
         pretPeOra: Number(formData.pretPeOra),
-        idBazaSportiva: ID_BAZA_CURENTA,
+        idBazaSportiva: DYNAMIC_ID,
         idSport: REVERSE_SPORT_MAP[formData.sport] || 1,
         servicii: formData.servicii || [],
       };

@@ -10,6 +10,7 @@ import {
   Icon,
   Spinner,
 } from "@chakra-ui/react";
+import { getCurrentUser } from "../utils/auth";
 import {
   FiSave,
   FiLogOut,
@@ -34,7 +35,6 @@ import { useNavigate } from "react-router-dom";
 // ==========================================
 const API_URL =
   import.meta.env.VITE_COURT_SERVICE_URL || "http://localhost:8082/api";
-const ID_BAZA_CURENTA = 1;
 
 const DS = {
   canvas: "#0B0C0E",
@@ -366,9 +366,10 @@ const ProfilBaza = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [notification, setNotification] = useState(null);
-
+  const currentUser = getCurrentUser();
+  const DYNAMIC_ID = currentUser ? currentUser.id : 1;
   const [formData, setFormData] = useState({
-    idBazaSportiva: ID_BAZA_CURENTA,
+    idBazaSportiva: DYNAMIC_ID,
     oras: "",
     adresa: "",
     descriere: "",
@@ -387,15 +388,13 @@ const ProfilBaza = () => {
   useEffect(() => {
     const fetchProfil = async () => {
       try {
-        const response = await fetch(
-          `${API_URL}/baze-sportive/${ID_BAZA_CURENTA}`,
-        );
+        const response = await fetch(`${API_URL}/baze-sportive/${DYNAMIC_ID}`);
         if (!response.ok)
           throw new Error("Nu s-au putut prelua datele bazei sportive.");
         const data = await response.json();
 
         setFormData({
-          idBazaSportiva: data.idBazaSportiva || ID_BAZA_CURENTA,
+          idBazaSportiva: data.idBazaSportiva || DYNAMIC_ID,
           oras: data.oras || "BUCURESTI_SECTOR1", // Fallback default
           adresa: data.adresa || "",
           descriere: data.descriere || "",
@@ -479,14 +478,11 @@ const ProfilBaza = () => {
             : formData.programFinal,
       };
 
-      const response = await fetch(
-        `${API_URL}/baze-sportive/${ID_BAZA_CURENTA}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),
-        },
-      );
+      const response = await fetch(`${API_URL}/baze-sportive/${DYNAMIC_ID}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
 
       if (!response.ok) throw new Error("Eroare la actualizarea profilului.");
 

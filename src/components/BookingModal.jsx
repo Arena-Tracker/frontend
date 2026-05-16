@@ -24,6 +24,7 @@ import {
   FiCheckCircle,
   FiXCircle,
 } from "react-icons/fi";
+import { getCurrentUser } from "../utils/auth";
 import { FaFutbol, FaParking } from "react-icons/fa";
 
 // ==========================================
@@ -31,7 +32,6 @@ import { FaFutbol, FaParking } from "react-icons/fa";
 // ==========================================
 const BOOKING_API_URL =
   import.meta.env.VITE_BOOKING_SERVICE_URL || "http://localhost:8081/api";
-const ID_USER_CURENT = 1;
 
 // Design System Local
 const DS = {
@@ -111,6 +111,8 @@ const BookingModal = ({ venue, isOpen, onClose, showGlobalToast }) => {
   const [selectedRange, setSelectedRange] = useState([]);
   const [selectedExtras, setSelectedExtras] = useState([]);
   const [toastMessage, setToastMessage] = useState(null);
+  const currentUser = getCurrentUser();
+  const DYNAMIC_ID = currentUser ? currentUser.id : 1;
 
   const visibleDates = useMemo(
     () => getDatesForOffset(visibleOffset, 5),
@@ -264,7 +266,7 @@ const BookingModal = ({ venue, isOpen, onClose, showGlobalToast }) => {
         oraStart: `${oraStart}:00`,
         oraFinal: `${oraFinal}:00`,
         idTeren: venue.id,
-        userId: ID_USER_CURENT,
+        userId: DYNAMIC_ID,
         idsExtraServicii: selectedExtras,
       };
 

@@ -23,7 +23,7 @@ import {
   FiGift,
   FiTrendingUp,
 } from "react-icons/fi";
-
+import { getCurrentUser } from "../utils/auth";
 // IMPORTĂM CONFIGURAȚIA .ENV
 import { API_URLS } from "../config/api.config"; // <-- Asigură-te că drumul e corect
 
@@ -321,7 +321,8 @@ const BenefitCard = ({ benefit, currentLevel, isActive, onToggle }) => {
 };
 
 const ProfileContent = () => {
-  const USER_ID = 1;
+  const currentUser = getCurrentUser();
+  const DYNAMIC_ID = currentUser ? currentUser.id : 1;
   const API_BASE_URL = `${API_URLS.USERS}/users`;
 
   const [activeTab, setActiveTab] = useState("detalii");
@@ -352,7 +353,7 @@ const ProfileContent = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/${USER_ID}`);
+        const response = await fetch(`${API_BASE_URL}/${DYNAMIC_ID}`);
         if (!response.ok)
           throw new Error("Nu am putut aduce datele din backend.");
         const data = await response.json();
@@ -385,7 +386,7 @@ const ProfileContent = () => {
           email: currentData.email,
           telefon: currentData.telefon,
         };
-        const response = await fetch(`${API_BASE_URL}/${USER_ID}`, {
+        const response = await fetch(`${API_BASE_URL}/${DYNAMIC_ID}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(requestPayload),

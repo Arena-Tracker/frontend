@@ -16,12 +16,31 @@ import {
 } from "@chakra-ui/react";
 import { colors } from "./colors";
 
-// IMPORTURILE TALE ORIGINALE (Acum restaurate)
 import RegisterPage from "./RegisterPage";
 import ForgotPasswordPage from "./ForgotPasswordPage";
 
 const AUTH_API_URL =
   import.meta.env.VITE_SECURITY_SERVICE_URL || "http://localhost:8080/api/auth";
+
+// FUNCȚIE UTILITARĂ PENTRU DECODARE JWT NATIVĂ
+const decodeToken = (token) => {
+  if (!token) return null;
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map(function (c) {
+          return "%" + ("0" + c.charCodeAt(0).toString(16)).slice(-2);
+        })
+        .join(""),
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+};
 
 const LoginPage = ({ onLogin }) => {
   const [email, setEmail] = useState("");
@@ -52,15 +71,23 @@ const LoginPage = ({ onLogin }) => {
         throw new Error("Email sau parolă incorectă!");
       }
 
-      const data = await response.json();
+      const data = await response.json(); // Se așteaptă AuthResponse { token, role }
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.role);
 
-      onLogin({ role: data.role });
+      // Decodăm token-ul pentru a scoate ID-ul utilizatorului trimis de backend
+      const decoded = decodeToken(data.token);
+      const userId = decoded
+        ? decoded.id || decoded.userId || decoded.idUser
+        : 1;
 
-      if (data.role === "ADMIN_BAZA" || data.role === "BAZA") {
-        navigate("/admin/terenuri");
+      // Salvăm în state-ul global id-ul real și rolul
+      onLogin({ id: userId, role: data.role });
+
+      // REDIRECȚIONARE CORECTĂ CONFORM RUTELOR DIN APP.JSX
+      if (data.role === "BAZA_SPORTIVA" || data.role === "ADMIN") {
+        navigate("/baza/terenuri");
       } else {
         navigate("/user/home");
       }
@@ -72,7 +99,6 @@ const LoginPage = ({ onLogin }) => {
     }
   };
 
-  // Rutare internă corectată
   if (view === "register") return <RegisterPage />;
   if (view === "forgot") return <ForgotPasswordPage />;
 
@@ -202,7 +228,6 @@ const LoginPage = ({ onLogin }) => {
                   >
                     Parolă
                   </Text>
-                  {/* RUTA CORECTATĂ: /?view=forgot */}
                   <Box
                     as={RouterLink}
                     to="/?view=forgot"
@@ -257,9 +282,8 @@ const LoginPage = ({ onLogin }) => {
             >
               Conectare
             </Button>
-
             <Text color="gray.400" fontSize="sm">
-              Nu ai cont? {/* RUTA CORECTATĂ: /?view=register */}
+              Nu ai cont?{" "}
               <Box
                 as={RouterLink}
                 to="/?view=register"
