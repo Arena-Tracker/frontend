@@ -1,6 +1,19 @@
 import React, { useState } from "react";
-import { useNavigate, useSearchParams, Link as RouterLink } from "react-router-dom";
-import { Box, Button, Input, VStack, Heading, Text, Container, Flex } from "@chakra-ui/react";
+import {
+  useNavigate,
+  useSearchParams,
+  Link as RouterLink,
+} from "react-router-dom";
+import {
+  Box,
+  Button,
+  Input,
+  VStack,
+  Heading,
+  Text,
+  Container,
+  Flex,
+} from "@chakra-ui/react";
 import { colors } from "./colors";
 
 // Importăm paginile tale separate
@@ -45,24 +58,102 @@ const LoginPage = ({ onLogin }) => {
 
     // Interfața de Login implicită
     return (
-      <Box p={10} bg={bgCard} borderRadius="3xl" boxShadow="0 20px 40px rgba(0,0,0,0.5)" border={`1px solid ${accent}22`} w={{ base: "90%", md: "400px" }} position="relative" zIndex={2}>
+      <Box
+        p={10}
+        bg={bgCard}
+        borderRadius="3xl"
+        boxShadow="0 20px 40px rgba(0,0,0,0.5)"
+        border={`1px solid ${accent}22`}
+        w={{ base: "90%", md: "400px" }}
+        position="relative"
+        zIndex={2}
+      >
         <form onSubmit={handleLogin}>
           <VStack spacing={6}>
             <VStack spacing={1} mb={4}>
-              <Heading color="white" size="xl">ArenaTracker</Heading>
+              <Heading color="white" size="xl">
+                ArenaTracker
+              </Heading>
               <Text color="gray.400">Bine ai revenit!</Text>
             </VStack>
             <VStack spacing={4} w="100%">
-              <Box w="100%"><Text color="gray.400" mb={1} fontSize="xs" fontWeight="bold">USERNAME</Text><Input placeholder="Introdu username" bg={bgMain} border="1px solid" borderColor="whiteAlpha.100" color="white" h="50px" borderRadius="xl" _focus={{ borderColor: accent, boxShadow: "none" }} value={username} onChange={(e) => setUsername(e.target.value)} /></Box>
               <Box w="100%">
-                <Text color="gray.400" mb={1} fontSize="xs" fontWeight="bold">PAROLA</Text>
-                <Input placeholder="Introdu parola" type="password" bg={bgMain} border="1px solid" borderColor="whiteAlpha.100" color="white" h="50px" borderRadius="xl" _focus={{ borderColor: accent, boxShadow: "none" }} value={password} onChange={(e) => setPassword(e.target.value)} />
-                <Flex justify="flex-end" mt={2}><Box as={RouterLink} to="/?view=forgot" color={accent} fontSize="sm" _hover={{ textDecoration: "underline" }}>Ai uitat parola?</Box></Flex>
+                <Text color="gray.400" mb={1} fontSize="xs" fontWeight="bold">
+                  EMAIL
+                </Text>
+                <Input
+                  placeholder="Introdu email"
+                  bg={bgMain}
+                  border="1px solid"
+                  borderColor="whiteAlpha.100"
+                  color="white"
+                  h="50px"
+                  borderRadius="xl"
+                  _focus={{ borderColor: accent, boxShadow: "none" }}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
+              </Box>
+              <Box w="100%">
+                <Text color="gray.400" mb={1} fontSize="xs" fontWeight="bold">
+                  PAROLA
+                </Text>
+                <Input
+                  placeholder="Introdu parola"
+                  type="password"
+                  bg={bgMain}
+                  border="1px solid"
+                  borderColor="whiteAlpha.100"
+                  color="white"
+                  h="50px"
+                  borderRadius="xl"
+                  _focus={{ borderColor: accent, boxShadow: "none" }}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <Flex justify="flex-end" mt={2}>
+                  <Box
+                    as={RouterLink}
+                    to="/?view=forgot"
+                    color={accent}
+                    fontSize="sm"
+                    _hover={{ textDecoration: "underline" }}
+                  >
+                    Ai uitat parola?
+                  </Box>
+                </Flex>
               </Box>
             </VStack>
-            {error && <Text color="red.400" fontSize="sm">{error}</Text>}
-            <Button type="submit" w="100%" bg={accent} color="black" h="50px" borderRadius="xl" fontWeight="bold" _hover={{ opacity: 0.9 }}>Autentificare</Button>
-            <Text color="gray.400" fontSize="sm">Nu ai cont? {" "}<Box as={RouterLink} to="/?view=register" color={accent} fontWeight="bold" display="inline-block" _hover={{ textDecoration: "underline" }}>Creează-ți!</Box></Text>
+            {error && (
+              <Text color="red.400" fontSize="sm">
+                {error}
+              </Text>
+            )}
+            <Button
+              type="submit"
+              w="100%"
+              bg={accent}
+              color="black"
+              h="50px"
+              borderRadius="xl"
+              fontWeight="bold"
+              _hover={{ opacity: 0.9 }}
+            >
+              Autentificare
+            </Button>
+            <Text color="gray.400" fontSize="sm">
+              Nu ai cont?{" "}
+              <Box
+                as={RouterLink}
+                to="/?view=register"
+                color={accent}
+                fontWeight="bold"
+                display="inline-block"
+                _hover={{ textDecoration: "underline" }}
+              >
+                Creează-ți!
+              </Box>
+            </Text>
           </VStack>
         </form>
       </Box>
@@ -71,19 +162,60 @@ const LoginPage = ({ onLogin }) => {
 
   return (
     // Acesta este Containerul mare cu fundalul metalic și efectele neon
-    <Container maxW="100vw" minH="100vh" centerContent justifyContent="center" bg={bgMain} p={0} position="relative" overflow="auto">
-      
+    <Container
+      maxW="100vw"
+      minH="100vh"
+      centerContent
+      justifyContent="center"
+      bg={bgMain}
+      p={0}
+      position="relative"
+      overflow="auto"
+    >
       {/* Decorative Fixed Blur Blobs (Efectele neon cum sunt pe tot user-ul) */}
-      <Box position="fixed" top="-10%" left="-15%" w="50vw" h="50vw" maxW="800px" maxH="800px" bg={`${accent}10`} borderRadius="full" filter="blur(80px)" zIndex="0" pointerEvents="none"/>
-      <Box position="fixed" bottom="-15%" right="-10%" w="40vw" h="40vw" maxW="600px" maxH="600px" bg={`${accent}05`} borderRadius="full" filter="blur(100px)" zIndex="0" pointerEvents="none"/>
-      
+      <Box
+        position="fixed"
+        top="-10%"
+        left="-15%"
+        w="50vw"
+        h="50vw"
+        maxW="800px"
+        maxH="800px"
+        bg={`${accent}10`}
+        borderRadius="full"
+        filter="blur(80px)"
+        zIndex="0"
+        pointerEvents="none"
+      />
+      <Box
+        position="fixed"
+        bottom="-15%"
+        right="-10%"
+        w="40vw"
+        h="40vw"
+        maxW="600px"
+        maxH="600px"
+        bg={`${accent}05`}
+        borderRadius="full"
+        filter="blur(100px)"
+        zIndex="0"
+        pointerEvents="none"
+      />
+
       {/* Conținutul paginii */}
-      <Flex w="100%" h="100%" justify="center" align="center" position="relative" zIndex={2} p={10}>
+      <Flex
+        w="100%"
+        h="100%"
+        justify="center"
+        align="center"
+        position="relative"
+        zIndex={2}
+        p={10}
+      >
         {renderContent()}
       </Flex>
     </Container>
   );
-  
 };
 
 export default LoginPage;
