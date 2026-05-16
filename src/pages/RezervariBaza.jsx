@@ -11,6 +11,7 @@ import {
   Grid,
   Spinner,
 } from "@chakra-ui/react";
+import { getCurrentUser } from "../utils/auth";
 import {
   FiCalendar,
   FiClock,
@@ -37,7 +38,6 @@ const PAYMENT_API_URL =
   import.meta.env.VITE_PAYMENT_SERVICE_URL || "http://localhost:8084/api";
 const BOOKING_API_URL =
   import.meta.env.VITE_BOOKING_SERVICE_URL || "http://localhost:8081/api";
-const ID_BAZA_CURENTA = 1;
 
 // ==========================================
 // 1. HELPERS & FORMATATOARE DE DATE
@@ -747,7 +747,8 @@ const RezervariBaza = () => {
   const [rezervari, setRezervari] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState(null);
-
+  const currentUser = getCurrentUser();
+  const DYNAMIC_ID = currentUser ? currentUser.id : 1;
   const [searchTerm, setSearchTerm] = useState("");
   const [filtruStare, setFiltruStare] = useState("TOATE");
   const [filtruTeren, setFiltruTeren] = useState("TOATE");
@@ -815,7 +816,7 @@ const RezervariBaza = () => {
       try {
         // 1. Preluăm toate plățile de pe Payment Service
         const response = await fetch(
-          `${PAYMENT_API_URL}/payment/bazasportiva/${ID_BAZA_CURENTA}`,
+          `${PAYMENT_API_URL}/payment/bazasportiva/${DYNAMIC_ID}`,
         );
         if (!response.ok)
           throw new Error("Eroare la preluarea plăților/facturilor");

@@ -36,7 +36,7 @@ import {
 } from "react-icons/fi";
 import { FaFutbol, FaBasketballBall, FaParking } from "react-icons/fa";
 import { GiTennisRacket, GiVolleyballBall } from "react-icons/gi";
-
+import { getCurrentUser } from "../utils/auth";
 // ==========================================
 // CONFIGURĂRI API & MEDIU
 // ==========================================
@@ -46,7 +46,6 @@ const USERS_API_URL =
   import.meta.env.VITE_USERS_SERVICE_URL || "http://localhost:8083/api";
 const BOOKING_API_URL =
   import.meta.env.VITE_BOOKING_SERVICE_URL || "http://localhost:8081/api";
-const ID_USER_CURENT = 1;
 
 const DS = {
   colors: {
@@ -147,7 +146,8 @@ const BookingModal = ({ venue, isOpen, onClose, showGlobalToast }) => {
 
   const [selectedRange, setSelectedRange] = useState([]);
   const [selectedExtras, setSelectedExtras] = useState([]);
-
+  const currentUser = getCurrentUser();
+  const DYNAMIC_ID = currentUser ? currentUser.id : 1;
   // Extragem serviciile extra DIN BACKEND (din terenul selectat)
   const dynamicExtras = useMemo(() => {
     if (!venue?.originalData?.servicii) return [];
@@ -291,13 +291,13 @@ const BookingModal = ({ venue, isOpen, onClose, showGlobalToast }) => {
       const maxIdx = Math.max(...selectedRange);
       const oraStart = currentSlots[minIdx].time.split(" - ")[0];
       const oraFinal = currentSlots[maxIdx].time.split(" - ")[1];
-
+      console.log(DYNAMIC_ID);
       const requestBody = {
         data: activeDateObj.rawDate,
         oraStart: `${oraStart}:00`,
         oraFinal: `${oraFinal}:00`,
         idTeren: venue.id,
-        userId: ID_USER_CURENT,
+        userId: DYNAMIC_ID,
         idsExtraServicii: selectedExtras,
       };
 
@@ -1391,7 +1391,8 @@ const HomeContent = () => {
   const [dbVenues, setDbVenues] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState(null);
-
+  const currentUser = getCurrentUser();
+  const DYNAMIC_ID = currentUser ? currentUser.id : 1;
   const formattedLocations = LOCATIONS.map((loc) => ({
     label: loc.replace(/_/g, " "),
     value: loc,
@@ -1406,7 +1407,7 @@ const HomeContent = () => {
     const fetchHomeData = async () => {
       setIsLoading(true);
       try {
-        const userRes = await fetch(`${USERS_API_URL}/users/${ID_USER_CURENT}`);
+        const userRes = await fetch(`${USERS_API_URL}/users/${DYNAMIC_ID}`);
         if (userRes.ok) {
           const userData = await userRes.json();
           setUserName(userData.prenume || userData.nume || "Alexandru");
