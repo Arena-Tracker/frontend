@@ -21,6 +21,8 @@ import {
   FiSearch,
   FiCheckSquare,
   FiSquare,
+  FiXCircle,
+  FiCheckCircle,
 } from "react-icons/fi";
 
 import BookingModal from "../components/BookingModal";
@@ -43,7 +45,6 @@ const DS = {
   transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
 };
 
-// Mapare ID-uri exacte pe care le ai în Baza de Date
 const SPORT_MAPPING = {
   fotbal: 1,
   tenis: 2,
@@ -54,7 +55,6 @@ const SPORT_MAPPING = {
   biliard: 7,
 };
 
-// Toate cele 7 categorii disponibile pt filtre
 const CATEGORIES = [
   { label: "Fotbal", value: "fotbal" },
   { label: "Tenis", value: "tenis" },
@@ -342,7 +342,7 @@ const FilterContent = () => {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedLocation, setSelectedLocation] = useState("");
-  const [selectedSort, setSelectedSort] = useState("ASC"); // Default crescător
+  const [selectedSort, setSelectedSort] = useState("ASC");
 
   // Stări aplicate pe care se face efectiv fetch-ul
   const [appliedFilters, setAppliedFilters] = useState({
@@ -356,17 +356,22 @@ const FilterContent = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [venueToBook, setVenueToBook] = useState(null);
 
-  // Funcția principală care cheamă Backend-ul
+  // Stare pentru TOAST GLOBAL (notificarea vine de la BookingModal)
+  const [toastMessage, setToastMessage] = useState(null);
+  const showGlobalToast = (title, description, status = "success") => {
+    setToastMessage({ title, description, status });
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
   useEffect(() => {
     const fetchFilteredTerenuri = async () => {
       setIsLoading(true);
       try {
-        // Generăm payload-ul exact conform clasei TerenFilterDTO din backend
         const payload = {
           numeTeren: appliedFilters.query || null,
           idSport:
             SPORT_MAPPING[appliedFilters.category?.toLowerCase()] || null,
-          oras: appliedFilters.location || null, // Aici se trimite ENUM-ul (ex: BUCURESTI_SECTOR1)
+          oras: appliedFilters.location || null,
           sortare: appliedFilters.sort || "ASC",
         };
 
@@ -380,7 +385,6 @@ const FilterContent = () => {
           throw new Error("Eroare la preluarea terenurilor filtrate.");
         const data = await response.json();
 
-        // N+1 Fetch: Căutăm orașul real al bazei sportive pentru fiecare teren
         const mappedVenues = await Promise.all(
           data.map(async (t) => {
             let realLocation = "Locație Necunoscută";
@@ -391,7 +395,7 @@ const FilterContent = () => {
               if (bazaRes.ok) {
                 const bazaData = await bazaRes.json();
                 if (bazaData.oras) {
-                  realLocation = bazaData.oras.replace(/_/g, " "); // Formatează pentru UI (scoate _)
+                  realLocation = bazaData.oras.replace(/_/g, " ");
                 }
               }
             } catch (err) {
@@ -404,7 +408,7 @@ const FilterContent = () => {
             return {
               id: t.idTeren || t.id,
               title: t.numeTeren,
-              location: realLocation, // Se va vedea "BUCURESTI SECTOR1"
+              location: realLocation,
               price: t.pretPeOra,
               rating: "5.0",
               image:
@@ -426,7 +430,6 @@ const FilterContent = () => {
     fetchFilteredTerenuri();
   }, [appliedFilters]);
 
-  // Handler buton "Aplică Filtre"
   const handleApplyFilters = () => {
     setAppliedFilters({
       query: searchQuery,
@@ -441,7 +444,6 @@ const FilterContent = () => {
     ? `Terenuri de ${CATEGORIES.find((c) => c.value === appliedFilters.category)?.label || appliedFilters.category}`
     : "Toate Terenurile";
 
-  // Formatează locațiile pentru Dropdown-ul din UI
   const formattedLocations = LOCATIONS.map((loc) => ({
     label: loc.replace(/_/g, " "),
     value: loc,
@@ -459,6 +461,38 @@ const FilterContent = () => {
       py={{ base: 10, md: 16 }}
       px={{ base: 4, md: 8 }}
     >
+      {/* GLOBAL TOAST NOTIFICATION */}
+      {toastMessage && (
+        <Flex
+          position="fixed"
+          top="4"
+          right="4"
+          bg={toastMessage.status === "error" ? "#FF5F5F" : "#5ED1BE"}
+          color={toastMessage.status === "error" ? "white" : "black"}
+          px={6}
+          py={4}
+          borderRadius="xl"
+          boxShadow="xl"
+          zIndex={10000}
+          alignItems="center"
+          gap={4}
+          animation="fade-in 0.3s ease-out"
+        >
+          <Icon
+            as={toastMessage.status === "error" ? FiXCircle : FiCheckCircle}
+            boxSize={6}
+          />
+          <Box>
+            <Text fontWeight="900" fontSize="sm">
+              {toastMessage.title}
+            </Text>
+            <Text fontSize="xs" fontWeight="600">
+              {toastMessage.description}
+            </Text>
+          </Box>
+        </Flex>
+      )}
+
       <Box
         position="absolute"
         top="-10%"
@@ -703,6 +737,7 @@ const FilterContent = () => {
         venue={venueToBook}
         isOpen={!!venueToBook}
         onClose={() => setVenueToBook(null)}
+        showGlobalToast={showGlobalToast}
       />
     </Box>
   );

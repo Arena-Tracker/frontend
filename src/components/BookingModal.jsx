@@ -81,7 +81,6 @@ const getDatesForOffset = (offset, count = 5) => {
       month: "long",
     });
 
-    // Format YYYY-MM-DD pentru API
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const dd = String(d.getDate()).padStart(2, "0");
@@ -99,12 +98,12 @@ const getDatesForOffset = (offset, count = 5) => {
   return dates;
 };
 
-const BookingModal = ({ venue, isOpen, onClose }) => {
+// ATENȚIE: Adăugăm showGlobalToast ca prop!
+const BookingModal = ({ venue, isOpen, onClose, showGlobalToast }) => {
   const [step, setStep] = useState(1);
   const [visibleOffset, setVisibleOffset] = useState(0);
   const [activeDateId, setActiveDateId] = useState(0);
 
-  // Stări pentru Rezervare
   const [currentSlots, setCurrentSlots] = useState([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -122,7 +121,6 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
     [visibleDates, activeDateId],
   );
 
-  // RESET la deschiderea modalului
   useEffect(() => {
     if (isOpen) {
       setStep(1);
@@ -140,13 +138,12 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
     };
   }, [isOpen]);
 
-  // FETCH INTERVALE LIBERE LA SCHIMBAREA DATEI
   useEffect(() => {
     const fetchIntervals = async () => {
       if (!isOpen || !venue) return;
 
       setIsLoadingSlots(true);
-      setSelectedRange([]); // Resetăm selecția dacă schimbă ziua
+      setSelectedRange([]);
 
       try {
         const response = await fetch(
@@ -157,16 +154,14 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
           availableFromApi = await response.json();
         }
 
-        // Reconstruim calendarul (ex: 08:00 - 22:59)
         const allSlots = [];
         for (let h = 8; h <= 22; h++) {
           const startH = String(h).padStart(2, "0");
           const endH = String(h).padStart(2, "0");
           const timeString = `${startH}:00 - ${endH}:59`;
 
-          // Verificăm dacă ora de start din calendarul nostru e găsită în response-ul de la API
           const isAvailable = availableFromApi.some((apiSlot) => {
-            const apiStart = apiSlot.OraStart || apiSlot.oraStart; // Suport pentru ambele tipuri de serializare JSON
+            const apiStart = apiSlot.OraStart || apiSlot.oraStart;
             return apiStart && apiStart.startsWith(`${startH}:00`);
           });
 
@@ -180,7 +175,6 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
         setCurrentSlots(allSlots);
       } catch (error) {
         console.error("Nu am putut prelua intervalele:", error);
-        // Fallback în caz de eroare (totul ocupat ca să nu permită rezervări greșite)
         const fallback = [];
         for (let h = 8; h <= 22; h++)
           fallback.push({
@@ -262,12 +256,12 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
       const minIdx = Math.min(...selectedRange);
       const maxIdx = Math.max(...selectedRange);
 
-      const oraStart = currentSlots[minIdx].time.split(" - ")[0]; // ex: "12:00"
-      const oraFinal = currentSlots[maxIdx].time.split(" - ")[1]; // ex: "12:59"
+      const oraStart = currentSlots[minIdx].time.split(" - ")[0];
+      const oraFinal = currentSlots[maxIdx].time.split(" - ")[1];
 
       const requestBody = {
         data: activeDateObj.rawDate,
-        oraStart: `${oraStart}:00`, // Format standard backend HH:mm:ss
+        oraStart: `${oraStart}:00`,
         oraFinal: `${oraFinal}:00`,
         idTeren: venue.id,
         userId: ID_USER_CURENT,
@@ -284,26 +278,35 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
         throw new Error("Eroare la crearea rezervării");
       }
 
-      showToast(
-        "Rezervare finalizată!",
-        "Factura și detaliile au fost trimise în contul tău.",
-      );
-      setTimeout(() => onClose(), 2500);
+      // ÎNCHIDERE INSTANTANEE ȘI DELEGARE CĂTRE PĂRINTE!
+      onClose();
+      if (showGlobalToast) {
+        showGlobalToast(
+          "Rezervare finalizată!",
+          "Factura și detaliile au fost salvate cu succes.",
+          "success",
+        );
+      }
     } catch (error) {
       console.error(error);
-      showToast(
-        "Eroare",
-        "Nu am putut finaliza rezervarea. Încearcă din nou.",
-        "error",
-      );
+      if (showGlobalToast) {
+        showGlobalToast(
+          "Eroare",
+          "Nu am putut finaliza rezervarea. Încearcă din nou.",
+          "error",
+        );
+      } else {
+        showToast(
+          "Eroare",
+          "Nu am putut finaliza rezervarea. Încearcă din nou.",
+          "error",
+        );
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // ------------------------------------------
-  // PASUL 1: SELECȚIA
-  // ------------------------------------------
   const renderStep1 = () => (
     <Flex
       direction={{ base: "column", lg: "row" }}
@@ -513,7 +516,6 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
               })}
             </Flex>
 
-            {/* ZONĂ RĂNDARE SLOTURI (Cu Loading) */}
             {isLoadingSlots ? (
               <Flex justify="center" align="center" py={10}>
                 <Spinner color={DS.colors.brand} size="lg" />
@@ -662,7 +664,6 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
         </Box>
       </Box>
 
-      {/* FOOTER FIX PASUL 1 */}
       <Box
         position="absolute"
         bottom={0}
@@ -724,9 +725,6 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
     </Flex>
   );
 
-  // ------------------------------------------
-  // PASUL 2: CONFIRMAREA
-  // ------------------------------------------
   const renderStep2 = () => (
     <Box
       flex="1"
@@ -986,8 +984,8 @@ const BookingModal = ({ venue, isOpen, onClose }) => {
       alignItems="center"
       justifyContent="center"
     >
-      {/* CUSTOM TOAST LOCAL */}
-      {toastMessage && (
+      {/* CUSTOM TOAST LOCAL (Fallback pt cand nu avem Global Toast) */}
+      {!showGlobalToast && toastMessage && (
         <Flex
           position="fixed"
           top="4"
