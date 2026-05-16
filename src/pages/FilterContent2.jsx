@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Flex,
@@ -12,7 +12,6 @@ import {
   Spinner,
   Icon,
 } from "@chakra-ui/react";
-
 import { useParams, useLocation } from "react-router-dom";
 import {
   FiMapPin,
@@ -27,6 +26,9 @@ import {
 } from "react-icons/fi";
 
 import BookingModal from "../components/BookingModal";
+
+// IMPORTĂM UTILITARUL NOSTRU SMART PENTRU TOKEN
+import { getCurrentUser } from "../utils/auth";
 
 const COURT_API_URL =
   import.meta.env.VITE_COURT_SERVICE_URL || "http://localhost:8082/api";
@@ -363,6 +365,12 @@ const FilterContent = () => {
     setToastMessage({ title, description, status });
     setTimeout(() => setToastMessage(null), 4000);
   };
+
+  // PRELUAM DINAMIC ID-ul UTILIZATORULUI DIN TOKEN
+  const currentUserId = useMemo(() => {
+    const currentUser = getCurrentUser();
+    return currentUser ? currentUser.id : 1;
+  }, []);
 
   useEffect(() => {
     const fetchFilteredTerenuri = async () => {
@@ -733,12 +741,13 @@ const FilterContent = () => {
         </Box>
       </Box>
 
-      {/* INTEGRARE MODAL */}
+      {/* INTEGRARE MODAL (Se trimite userId corect) */}
       <BookingModal
         venue={venueToBook}
         isOpen={!!venueToBook}
         onClose={() => setVenueToBook(null)}
         showGlobalToast={showGlobalToast}
+        userId={currentUserId}
       />
     </Box>
   );
