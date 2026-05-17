@@ -1,5 +1,5 @@
-# Pasul 1: Compilarea codului Node.js
-FROM node:18-alpine AS build
+# Pasul 1: Compilarea codului Node.js (Am trecut la Node 20)
+FROM node:20-alpine AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
