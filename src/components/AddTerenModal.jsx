@@ -7,7 +7,10 @@ const SPORT_OPTIONS = [
   { id: 1, nume: "Fotbal" },
   { id: 2, nume: "Tenis" },
   { id: 3, nume: "Baschet" },
-  { id: 4, nume: "Volei" },
+  { id: 4, nume: "Ping-Pong" },
+  { id: 5, nume: "Padel" },
+  { id: 6, nume: "Tenis Picior" },
+  { id: 7, nume: "Biliard" },
 ];
 
 const DEFAULT_FORM_STATE = {

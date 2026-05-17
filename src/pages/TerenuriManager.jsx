@@ -24,8 +24,8 @@ import {
 } from "react-icons/fi";
 import { getCurrentUser } from "../utils/auth";
 import { IoTicketOutline } from "react-icons/io5";
-import { FaFutbol, FaBasketballBall } from "react-icons/fa";
-import { GiTennisRacket, GiVolleyballBall } from "react-icons/gi";
+import { FaFutbol, FaBasketballBall, FaTableTennis } from "react-icons/fa";
+import { GiEightBall, GiTennisRacket, GiVolleyballBall } from "react-icons/gi";
 import { colors } from "./colors";
 
 import AddTerenModal from "../components/AddTerenModal";
@@ -41,21 +41,30 @@ const SPORT_MAP = {
   1: "Fotbal",
   2: "Tenis",
   3: "Baschet",
-  4: "Volei",
+  4: "Ping-Pong",
+  5: "Padel",
+  6: "Tenis Picior",
+  7: "Biliard",
 };
-
 const REVERSE_SPORT_MAP = {
   Fotbal: 1,
   Tenis: 2,
   Baschet: 3,
-  Volei: 4,
+  "Ping-Pong": 4,
+  Padel: 5,
+  "Tenis Picior": 6,
+  Biliard: 7,
 };
+// REVERSE_SPORT_MAP nu mai este necesar, îl poți șterge!
 
 const SPORT_ICONS = {
   Fotbal: FaFutbol,
   Tenis: GiTennisRacket,
   Baschet: FaBasketballBall,
-  Volei: GiVolleyballBall,
+  "Ping-Pong": FaTableTennis,
+  Padel: GiTennisRacket,
+  "Tenis Picior": FaFutbol,
+  Biliard: GiEightBall, // Sau GiEightBall dacă ai importat-o
 };
 
 // FORMATOR DATE (Defensive Programming)
@@ -380,7 +389,8 @@ const TerenuriManager = () => {
         numarLocuri: Number(formData.numarLocuri),
         pretPeOra: Number(formData.pretPeOra),
         idBazaSportiva: DYNAMIC_ID,
-        idSport: REVERSE_SPORT_MAP[formData.sport] || 1,
+        // Șterge linia veche și pune asta:
+        idSport: formData.idSport,
         servicii: formData.servicii || [],
       };
 
@@ -392,7 +402,7 @@ const TerenuriManager = () => {
           body: JSON.stringify(requestBody),
         },
       );
-
+      console.log(requestBody);
       if (!response.ok) throw new Error("Create Failed");
 
       const nouTeren = await response.json();
