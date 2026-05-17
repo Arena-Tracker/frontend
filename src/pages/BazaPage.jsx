@@ -24,7 +24,7 @@ const BazaPage = () => {
       <Navigation
         navItems={BAZA_NAV_ITEMS}
         basePath="/baza"
-        title="SportApp."
+        title="ArenaTracker."
       />
 
       <Box

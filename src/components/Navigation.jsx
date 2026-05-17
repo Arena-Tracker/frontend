@@ -4,7 +4,7 @@ import { Box, Flex, VStack, Icon, Text } from "@chakra-ui/react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { colors } from "../pages/colors";
 
-export const Navigation = ({ navItems, basePath, title = "SportApp." }) => {
+export const Navigation = ({ navItems, basePath, title = "ArenaTracker." }) => {
   const navigate = useNavigate();
   const location = useLocation();
 

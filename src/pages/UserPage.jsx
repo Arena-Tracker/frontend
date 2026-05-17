@@ -24,7 +24,7 @@ const UserPage = () => {
       <Navigation
         navItems={NAV_ITEMS_USER}
         basePath="/user"
-        title="SportApp."
+        title="ArenaTracker."
       />
 
       {/* 3. Aici se vor randa sub-rutele (HomeContent, SearchContent etc.) datorită lui <Outlet /> */}
