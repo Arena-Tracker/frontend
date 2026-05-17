@@ -23,9 +23,10 @@ import {
   FiGift,
   FiTrendingUp,
 } from "react-icons/fi";
+import { useNavigate } from "react-router-dom"; // <-- IMPORT NOU PENTRU NAVIGARE
 import { getCurrentUser } from "../utils/auth";
 // IMPORTĂM CONFIGURAȚIA .ENV
-import { API_URLS } from "../config/api.config"; // <-- Asigură-te că drumul e corect
+import { API_URLS } from "../config/api.config"; 
 
 const DS = {
   colors: {
@@ -321,6 +322,7 @@ const BenefitCard = ({ benefit, currentLevel, isActive, onToggle }) => {
 };
 
 const ProfileContent = () => {
+  const navigate = useNavigate(); // <-- Inițializare hook navigare
   const currentUser = getCurrentUser();
   const DYNAMIC_ID = currentUser ? currentUser.id : 1;
   const API_BASE_URL = `${API_URLS.USERS}/users`;
@@ -409,6 +411,19 @@ const ProfileContent = () => {
         : [...prev, benefitId],
     );
   }, []);
+
+  // --- FUNCȚIE NOUĂ DE LOGOUT ---
+  const handleLogout = () => {
+    // 1. Ștergem datele din LocalStorage
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    
+    // 2. Închidem modalul de confirmare
+    setIsDeleteModalOpen(false);
+    
+    // 3. Redirecționăm la pagina principală de Login
+    navigate("/");
+  };
 
   if (isLoading)
     return (
@@ -806,7 +821,7 @@ const ProfileContent = () => {
                 h="50px"
                 borderRadius="xl"
                 fontWeight="700"
-                onClick={() => setIsDeleteModalOpen(false)}
+                onClick={handleLogout} // <--- AM ADAUGAT FUNCTIA AICI
                 _hover={{ filter: "brightness(1.1)" }}
               >
                 LOG OUT
