@@ -35,8 +35,10 @@ import {
   FiXCircle,
 } from "react-icons/fi";
 import { FaFutbol, FaBasketballBall, FaParking } from "react-icons/fa";
-import { GiTennisRacket, GiVolleyballBall } from "react-icons/gi";
+import { GiTennisRacket } from "react-icons/gi";
+import { MdSportsTennis } from "react-icons/md"; // Import pentru Padel adăugat
 import { getCurrentUser } from "../utils/auth";
+
 // ==========================================
 // CONFIGURĂRI API & MEDIU
 // ==========================================
@@ -62,11 +64,12 @@ const DS = {
   transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
 };
 
+// Volei înlocuit cu Padel
 const SPORT_CATEGORIES = [
   { id: 1, name: "Fotbal", icon: FaFutbol, color: "#5ED1BE" },
   { id: 2, name: "Baschet", icon: FaBasketballBall, color: "#F97316" },
   { id: 3, name: "Tenis", icon: GiTennisRacket, color: "#A855F7" },
-  { id: 4, name: "Volei", icon: GiVolleyballBall, color: "#3B82F6" },
+  { id: 4, name: "Padel", icon: MdSportsTennis, color: "#72A1B6" },
 ];
 
 const LOCATIONS = [
@@ -291,7 +294,7 @@ const BookingModal = ({ venue, isOpen, onClose, showGlobalToast }) => {
       const maxIdx = Math.max(...selectedRange);
       const oraStart = currentSlots[minIdx].time.split(" - ")[0];
       const oraFinal = currentSlots[maxIdx].time.split(" - ")[1];
-      console.log(DYNAMIC_ID);
+      
       const requestBody = {
         data: activeDateObj.rawDate,
         oraStart: `${oraStart}:00`,
@@ -1045,7 +1048,7 @@ const BookingModal = ({ venue, isOpen, onClose, showGlobalToast }) => {
 // ==========================================
 // COMPONENTE SECUNDARE
 // ==========================================
-const PremiumSportCard = ({ sport }) => {
+const PremiumSportCard = ({ sport, onClick }) => { // Adăugat onClick
   const IconComponent = sport.icon;
   return (
     <Flex
@@ -1060,6 +1063,7 @@ const PremiumSportCard = ({ sport }) => {
       gap={3}
       cursor="pointer"
       transition={DS.transition}
+      onClick={onClick} // Adăugat evenimentul onClick
       _hover={{
         transform: "translateY(-4px)",
         borderColor: sport.color,
@@ -1381,12 +1385,34 @@ const PremiumDropdown = ({ value, options, onChange, placeholder }) => {
 // COMPONENTA PRINCIPALĂ
 // ==========================================
 const HomeContent = () => {
+  const navigate = useNavigate();
   const [showFilters, setShowFilters] = useState(false);
+  
+  // STĂRI NOI PENTRU BARA DE CĂUTARE
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedSportFilter, setSelectedSportFilter] = useState(null);
   const [selectedLocation, setSelectedLocation] = useState("");
+  
   const [venueToBook, setVenueToBook] = useState(null);
 
-  // Stări pentru integrare API & Global Toast
+  // FUNCȚIA DE REDIRECȚIONARE
+  const handleApplyFilters = () => {
+    let categoryPath = "toate";
+    
+    if (selectedSportFilter) {
+      const sport = SPORT_CATEGORIES.find(s => s.id === selectedSportFilter);
+      if (sport) {
+        categoryPath = sport.name.toLowerCase();
+      }
+    }
+
+    const params = new URLSearchParams();
+    if (searchQuery.trim() !== "") params.append("q", searchQuery.trim());
+    if (selectedLocation) params.append("loc", selectedLocation);
+
+    navigate(`/user/search/filter/${categoryPath}?${params.toString()}`);
+  };
+
   const [userName, setUserName] = useState("Client");
   const [dbVenues, setDbVenues] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -1567,10 +1593,13 @@ const HomeContent = () => {
             zIndex={3}
             gap={3}
           >
-            <Box color={DS.colors.muted}>
+            <Box as="button" onClick={handleApplyFilters} color={DS.colors.muted} _hover={{ color: DS.colors.brand }}>
               <FiSearch size={20} />
             </Box>
             <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleApplyFilters()}
               placeholder="Caută după nume..."
               border="none"
               bg="transparent"
@@ -1632,11 +1661,7 @@ const HomeContent = () => {
                           size="sm"
                           h="36px"
                           px={4}
-                          bg={
-                            selectedSportFilter === sport.id
-                              ? "transparent"
-                              : "transparent"
-                          }
+                          bg="transparent"
                           color={
                             selectedSportFilter === sport.id
                               ? DS.colors.brand
@@ -1703,6 +1728,7 @@ const HomeContent = () => {
                     onClick={() => {
                       setSelectedSportFilter(null);
                       setSelectedLocation("");
+                      setSearchQuery("");
                     }}
                     _hover={{ bg: "whiteAlpha.200" }}
                     transition={DS.transition}
@@ -1717,7 +1743,7 @@ const HomeContent = () => {
                     borderRadius="lg"
                     fontWeight="800"
                     fontSize="xs"
-                    onClick={() => setShowFilters(false)}
+                    onClick={handleApplyFilters}
                     _hover={{ opacity: 0.9, transform: "translateY(-1px)" }}
                     transition={DS.transition}
                   >
@@ -1731,7 +1757,11 @@ const HomeContent = () => {
 
         <SectionLayout title="Sporturi" showViewAll={false}>
           {SPORT_CATEGORIES.map((sport) => (
-            <PremiumSportCard key={sport.id} sport={sport} />
+            <PremiumSportCard 
+              key={sport.id} 
+              sport={sport} 
+              onClick={() => navigate(`/user/search/filter/${sport.name.toLowerCase()}`)} 
+            />
           ))}
         </SectionLayout>
 

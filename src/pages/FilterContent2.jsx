@@ -337,6 +337,7 @@ const FilterContent = () => {
 
   const queryParams = new URLSearchParams(location.search);
   const initialQuery = queryParams.get("q") || "";
+  const initialLocation = queryParams.get("loc") || ""; // <--- NOU
   const initialCategory = sportType === "toate" ? "" : sportType || "";
 
   const [openDropdownId, setOpenDropdownId] = useState(null);
@@ -344,14 +345,14 @@ const FilterContent = () => {
   // Stări locale pentru input-urile de filtre
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
-  const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState(initialLocation); // <--- MODIFICAT
   const [selectedSort, setSelectedSort] = useState("ASC");
 
   // Stări aplicate pe care se face efectiv fetch-ul
   const [appliedFilters, setAppliedFilters] = useState({
     query: initialQuery,
     category: initialCategory,
-    location: "",
+    location: initialLocation, // <--- MODIFICAT
     sort: "ASC",
   });
 
